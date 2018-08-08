@@ -37,7 +37,7 @@ public class AclLineMatchExprToBDDTest {
   public void setup() {
     _pkt = new BDDPacket();
     _toBDD =
-        new AclLineMatchExprToBDD(BDDPacket.factory, _pkt, ImmutableMap.of(), ImmutableMap.of());
+        new AclLineMatchExprToBDD(_pkt.getFactory(), _pkt, ImmutableMap.of(), ImmutableMap.of());
   }
 
   @Test
@@ -100,7 +100,7 @@ public class AclLineMatchExprToBDDTest {
     PermittedByAcl permittedByAcl = new PermittedByAcl("foo");
     Map<String, Supplier<BDD>> namedAclBDDs = ImmutableMap.of("foo", () -> fooIpBDD);
     AclLineMatchExprToBDD toBDD =
-        new AclLineMatchExprToBDD(BDDPacket.factory, _pkt, namedAclBDDs, ImmutableMap.of());
+        new AclLineMatchExprToBDD(_pkt.getFactory(), _pkt, namedAclBDDs, ImmutableMap.of());
     assertThat(permittedByAcl.accept(toBDD), equalTo(fooIpBDD));
   }
 
@@ -108,7 +108,7 @@ public class AclLineMatchExprToBDDTest {
   public void testPermittedByAcl_undefined() {
     PermittedByAcl permittedByAcl = new PermittedByAcl("foo");
     AclLineMatchExprToBDD toBDD =
-        new AclLineMatchExprToBDD(BDDPacket.factory, _pkt, ImmutableMap.of(), ImmutableMap.of());
+        new AclLineMatchExprToBDD(_pkt.getFactory(), _pkt, ImmutableMap.of(), ImmutableMap.of());
     exception.expect(IllegalArgumentException.class);
     exception.expectMessage("Undefined PermittedByAcl reference: foo");
     permittedByAcl.accept(toBDD);
@@ -120,7 +120,7 @@ public class AclLineMatchExprToBDDTest {
     Map<String, Supplier<BDD>> namedAclBDDs = new HashMap<>();
     namedAclBDDs.put("foo", new NonRecursiveSupplier<>(() -> namedAclBDDs.get("foo").get()));
     AclLineMatchExprToBDD toBDD =
-        new AclLineMatchExprToBDD(BDDPacket.factory, _pkt, namedAclBDDs, ImmutableMap.of());
+        new AclLineMatchExprToBDD(_pkt.getFactory(), _pkt, namedAclBDDs, ImmutableMap.of());
     exception.expect(BatfishException.class);
     exception.expectMessage("Circular PermittedByAcl reference: foo");
     permittedByAcl.accept(toBDD);
@@ -169,6 +169,16 @@ public class AclLineMatchExprToBDDTest {
     BDDInteger fragmentOffset = _pkt.getFragmentOffset();
     BDD fragmentOffsetBDD = fragmentOffset.value(0).or(fragmentOffset.value(1));
     assertThat(bdd, equalTo(fragmentOffsetBDD));
+  }
+
+  @Test
+  public void testMatchHeaderSpace_icmpType() {
+    HeaderSpace headerSpace =
+        HeaderSpace.builder().setIcmpTypes(ImmutableList.of(new SubRange(8, 8))).build();
+    AclLineMatchExpr matchExpr = new MatchHeaderSpace(headerSpace);
+    BDD matchExprBDD = _toBDD.visit(matchExpr);
+    BDD icmpTypeBDD = _pkt.getIcmpType().value(8);
+    assertThat(matchExprBDD, equalTo(icmpTypeBDD));
   }
 
   @Test

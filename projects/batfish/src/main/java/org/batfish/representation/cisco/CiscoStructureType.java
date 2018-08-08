@@ -6,6 +6,7 @@ public enum CiscoStructureType implements StructureType {
   ACCESS_LIST("acl"),
   AS_PATH_ACCESS_LIST("as-path access-list"),
   AS_PATH_SET("as-path-set"),
+  BFD_TEMPLATE("bfd-template"),
   BGP_PEER_GROUP("bgp group"),
   BGP_PEER_SESSION("bgp session"),
   BGP_TEMPLATE_PEER("bgp template peer"),
@@ -15,6 +16,7 @@ public enum CiscoStructureType implements StructureType {
   COMMUNITY_LIST("community-list"),
   COMMUNITY_LIST_EXPANDED("expanded community-list"),
   COMMUNITY_LIST_STANDARD("standard community-list"),
+  COMMUNITY_SET("community-set"),
   CRYPTO_DYNAMIC_MAP_SET("crypto-dynamic-map-set"),
   CRYPTO_MAP_SET("crypto-map-set"),
   CSR_PARAMS("csr-params"),
@@ -56,7 +58,8 @@ public enum CiscoStructureType implements StructureType {
   SERVICE_CLASS("cable service-class"),
   SERVICE_OBJECT("object service"),
   SERVICE_OBJECT_GROUP("object-group service"),
-  SERVICE_TEMPLATE("service-template");
+  SERVICE_TEMPLATE("service-template"),
+  TRACK("track");
 
   private final String _description;
 
