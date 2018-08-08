@@ -99,6 +99,7 @@ import org.batfish.datamodel.BgpSessionProperties;
 import org.batfish.datamodel.BgpSessionProperties.SessionType;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Edge;
 import org.batfish.datamodel.EmptyIpSpace;
 import org.batfish.datamodel.Flow;
@@ -948,14 +949,14 @@ public class CommonUtil {
       BgpPeerConfigId listener,
       BgpActivePeerConfig src,
       @Nullable ITracerouteEngine tracerouteEngine,
-      @Nullable DataPlane dp) {
+      @Nullable DataPlaneContext dpc) {
 
     Ip srcAddress = src.getLocalIp();
     Ip dstAddress = src.getPeerAddress();
     if (dstAddress == null) {
       return false;
     }
-    if (tracerouteEngine == null || dp == null) {
+    if (tracerouteEngine == null || dpc == null) {
       throw new BatfishException("Cannot compute neighbor reachability without a dataplane");
     }
 
@@ -976,7 +977,7 @@ public class CommonUtil {
 
     // Execute the "initiate connection" traceroute
     SortedMap<Flow, Set<FlowTrace>> traces =
-        tracerouteEngine.processFlows(dp, ImmutableSet.of(forwardFlow), dp.getFibs(), false);
+        tracerouteEngine.processFlows(dpc, ImmutableSet.of(forwardFlow), dpc.getFibs(), false);
 
     SortedSet<FlowTrace> acceptedFlows =
         traces
@@ -1012,7 +1013,8 @@ public class CommonUtil {
     fb.setSrcPort(forwardFlow.getDstPort());
     fb.setDstPort(forwardFlow.getSrcPort());
     Flow backwardFlow = fb.build();
-    traces = tracerouteEngine.processFlows(dp, ImmutableSet.of(backwardFlow), dp.getFibs(), false);
+    traces =
+        tracerouteEngine.processFlows(dpc, ImmutableSet.of(backwardFlow), dpc.getFibs(), false);
 
     /*
      * If backward traceroutes fail, do not consider the neighbor reachable
@@ -1063,7 +1065,7 @@ public class CommonUtil {
    *     {@code keepInvalid=false}, which only does filters invalid neighbors at the control-plane
    *     level
    * @param tracerouteEngine an instance of {@link ITracerouteEngine} for doing reachability checks.
-   * @param dp (partially) computed dataplane.
+   * @param dpc (partially) computed dataplane context.
    * @return A graph ({@link Network}) representing all BGP peerings.
    */
   public static ValueGraph<BgpPeerConfigId, BgpSessionProperties> initBgpTopology(
@@ -1072,7 +1074,7 @@ public class CommonUtil {
       boolean keepInvalid,
       boolean checkReachability,
       @Nullable ITracerouteEngine tracerouteEngine,
-      @Nullable DataPlane dp) {
+      @Nullable DataPlaneContext dpc) {
 
     // TODO: handle duplicate ips on different vrfs
 
@@ -1158,7 +1160,7 @@ public class CommonUtil {
          */
         if (checkReachability) {
           if (isReachableBgpNeighbor(
-              neighborId, candidateNeighborId, neighbor, tracerouteEngine, dp)) {
+              neighborId, candidateNeighborId, neighbor, tracerouteEngine, dpc)) {
             graph.putEdgeValue(
                 neighborId,
                 candidateNeighborId,

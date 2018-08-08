@@ -14,6 +14,8 @@ public interface DataPlaneContext {
 
   Map<String, Configuration> getConfigurations();
 
+  DataPlane getDataPlane();
+
   Map<String, Map<String, Fib>> getFibs();
 
   ForwardingAnalysis getForwardingAnalysis();
@@ -30,6 +32,13 @@ public interface DataPlaneContext {
    */
   Map<Ip, Map<String, Set<String>>> getIpVrfOwners();
 
+  /**
+   * Return the summary of route prefix propagation. Map structure: Hostname -> VRF name -> Prefix
+   * -> action taken -> set of hostnames (peers).
+   */
+  SortedMap<String, SortedMap<String, Map<Prefix, Map<String, Set<String>>>>>
+      getPrefixTracingInfoSummary();
+
   /** Return the set of all (main) RIBs. Map structure: hostname -> VRF name -> GenericRib */
   SortedMap<String, SortedMap<String, GenericRib<AbstractRoute>>> getRibs();
 
@@ -38,11 +47,4 @@ public interface DataPlaneContext {
 
   /** Get a set of all layer 3 edges in the network */
   SortedSet<Edge> getTopologyEdges();
-
-  /**
-   * Return the summary of route prefix propagation. Map structure: Hostname -> VRF name -> Prefix
-   * -> action taken -> set of hostnames (peers).
-   */
-  SortedMap<String, SortedMap<String, Map<Prefix, Map<String, Set<String>>>>>
-      getPrefixTracingInfoSummary();
 }

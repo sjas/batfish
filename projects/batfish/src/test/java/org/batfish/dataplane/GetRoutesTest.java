@@ -68,7 +68,7 @@ public class GetRoutesTest {
     ComputeDataPlaneResult dp = dataPlanePlugin.computeDataPlane(false);
 
     SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>> routes =
-        dataPlanePlugin.getRoutes(dp._dataPlane);
+        dataPlanePlugin.getRoutes(dp._dataPlaneContext);
 
     assertThat(routes, hasKey(n1.getHostname()));
     // Empty VRF is there

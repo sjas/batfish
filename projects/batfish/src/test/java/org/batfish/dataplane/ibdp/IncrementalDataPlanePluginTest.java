@@ -497,7 +497,7 @@ public class IncrementalDataPlanePluginTest {
     dataPlanePlugin.initialize(batfish);
     ComputeDataPlaneResult dp = dataPlanePlugin.computeDataPlane(false);
     SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>> routes =
-        dataPlanePlugin.getRoutes(dp._dataPlane);
+        dataPlanePlugin.getRoutes(dp._dataPlaneContext);
 
     SortedSet<AbstractRoute> r1Routes = routes.get("r1").get(DEFAULT_VRF_NAME);
     SortedSet<AbstractRoute> r3Routes = routes.get("r3").get(DEFAULT_VRF_NAME);
@@ -598,7 +598,7 @@ public class IncrementalDataPlanePluginTest {
     DataPlanePlugin dataPlanePlugin = batfish.getDataPlanePlugin();
     ComputeDataPlaneResult dp = dataPlanePlugin.computeDataPlane(false);
     SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>> routes =
-        dataPlanePlugin.getRoutes(dp._dataPlane);
+        dataPlanePlugin.getRoutes(dp._dataPlaneContext);
     SortedSet<AbstractRoute> r2aRoutes = routes.get("r2a").get(DEFAULT_VRF_NAME);
     SortedSet<AbstractRoute> r2bRoutes = routes.get("r2b").get(DEFAULT_VRF_NAME);
     Set<Prefix> r2aPrefixes =
@@ -636,7 +636,7 @@ public class IncrementalDataPlanePluginTest {
     DataPlanePlugin dataPlanePlugin = batfish.getDataPlanePlugin();
     ComputeDataPlaneResult dp = dataPlanePlugin.computeDataPlane(false);
     SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>> routes =
-        dataPlanePlugin.getRoutes(dp._dataPlane);
+        dataPlanePlugin.getRoutes(dp._dataPlaneContext);
 
     SortedSet<AbstractRoute> r2Routes = routes.get("r2").get(DEFAULT_VRF_NAME);
     SortedSet<AbstractRoute> r3Routes = routes.get("r3").get(DEFAULT_VRF_NAME);
@@ -671,7 +671,7 @@ public class IncrementalDataPlanePluginTest {
     ComputeDataPlaneResult dp = dataPlanePlugin.computeDataPlane(false);
     SortedMap<String, RoutesByVrf> environmentRoutes = batfish.loadEnvironmentRoutingTables();
     SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>> routes =
-        dataPlanePlugin.getRoutes(dp._dataPlane);
+        dataPlanePlugin.getRoutes(dp._dataPlaneContext);
     Prefix staticRoutePrefix = Prefix.parse("10.0.0.0/8");
     SortedSet<AbstractRoute> r1BdpRoutes = routes.get("r1").get(DEFAULT_VRF_NAME);
     AbstractRoute r1BdpRoute =
@@ -731,7 +731,7 @@ public class IncrementalDataPlanePluginTest {
             false, ImmutableMap.of(c.getHostname(), c), topology, Collections.emptySet());
 
     // generating fibs should not crash
-    dp._dataPlane.getFibs();
+    dp._dataPlaneContext.getFibs();
   }
 
   @Test
@@ -742,7 +742,7 @@ public class IncrementalDataPlanePluginTest {
     Batfish batfish = BatfishTestUtils.getBatfish(configs, _folder);
     batfish.getSettings().setDataplaneEngineName(IncrementalDataPlanePlugin.PLUGIN_NAME);
     DataPlanePlugin dataPlanePlugin = batfish.getDataPlanePlugin();
-    DataPlane dp = dataPlanePlugin.computeDataPlane(false)._dataPlane;
+    DataPlane dp = dataPlanePlugin.computeDataPlane(false)._dataPlaneContext;
 
     ValueGraph<BgpPeerConfigId, BgpSessionProperties> bgpTopology = dp.getBgpTopology();
 
@@ -796,7 +796,7 @@ public class IncrementalDataPlanePluginTest {
         BatfishTestUtils.getBatfish(ImmutableSortedMap.of(n1.getHostname(), n1), _folder);
     batfish.getSettings().setDataplaneEngineName(IncrementalDataPlanePlugin.PLUGIN_NAME);
     DataPlanePlugin dataPlanePlugin = batfish.getDataPlanePlugin();
-    DataPlane dp = dataPlanePlugin.computeDataPlane(false)._dataPlane;
+    DataPlane dp = dataPlanePlugin.computeDataPlane(false)._dataPlaneContext;
 
     assertThat(
         dp.getRibs().get(n1.getHostname()).get(vrf.getName()).getRoutes(),

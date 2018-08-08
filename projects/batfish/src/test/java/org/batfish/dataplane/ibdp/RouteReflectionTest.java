@@ -244,7 +244,7 @@ public class RouteReflectionTest {
                     .setSrcIp(as3PeeringIp)
                     .setSrcNode("as3Edge")
                     .build()));
-    return IncrementalBdpEngine.getRoutes((IntermediateIncrementalDataPlane) dpResult._dataPlane);
+    return IncrementalBdpEngine.getRoutes((IntermediateIncrementalDataPlane) dpResult._dataPlaneContext);
   }
 
   private SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>>
@@ -363,7 +363,7 @@ public class RouteReflectionTest {
                             .setSrcIp(as1PeeringIp)
                             .setSrcNode("as1Edge")
                             .build()))
-                ._dataPlane;
+                ._dataPlaneContext;
     return IncrementalBdpEngine.getRoutes(dp);
   }
 

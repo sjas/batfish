@@ -24,6 +24,7 @@ import org.batfish.common.util.CommonUtil;
 import org.batfish.datamodel.AbstractRoute;
 import org.batfish.datamodel.BgpRoute;
 import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.GenericRib;
 import org.batfish.datamodel.Ip;
 import org.batfish.datamodel.answers.AnswerElement;
@@ -68,11 +69,11 @@ public class RoutesAnswerer extends Answerer {
   public AnswerElement answer() {
     RoutesQuestion question = (RoutesQuestion) _question;
     TableAnswerElement answer = new TableAnswerElement(getTableMetadata(question.getProtocol()));
-    DataPlane dp = _batfish.loadDataPlane();
+    DataPlaneContext dpc = _batfish.loadDataPlaneContext();
     answer.postProcessAnswer(
         _question,
         generateRows(
-            dp,
+            dpc,
             question.getProtocol(),
             question.getNodeRegex().getMatchingNodes(_batfish),
             question.getVrfRegex(),
@@ -81,19 +82,19 @@ public class RoutesAnswerer extends Answerer {
   }
 
   private static Multiset<Row> generateRows(
-      DataPlane dp,
+      DataPlaneContext dpc,
       RibProtocol protocol,
       Set<String> matchingNodes,
       String vrfRegex,
       @Nullable Map<Ip, Set<String>> ipOwners) {
     switch (protocol) {
       case BGP:
-        return getBgpRibRoutes(dp.getBgpRoutes(false), matchingNodes, vrfRegex);
+        return getBgpRibRoutes(dpc.getBgpRoutes(false), matchingNodes, vrfRegex);
       case BGPMP:
-        return getBgpRibRoutes(dp.getBgpRoutes(true), matchingNodes, vrfRegex);
+        return getBgpRibRoutes(dpc.getBgpRoutes(true), matchingNodes, vrfRegex);
       case ALL:
       default:
-        return getMainRibRoutes(dp.getRibs(), matchingNodes, vrfRegex, ipOwners);
+        return getMainRibRoutes(dpc.getRibs(), matchingNodes, vrfRegex, ipOwners);
     }
   }
 

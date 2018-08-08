@@ -9,6 +9,7 @@ import org.batfish.datamodel.AbstractRoute;
 import org.batfish.datamodel.BgpAdvertisement;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Flow;
 import org.batfish.datamodel.FlowTrace;
 import org.batfish.datamodel.Topology;
@@ -42,16 +43,17 @@ public abstract class DataPlanePlugin extends BatfishPlugin implements IDataPlan
   }
 
   /**
-   * Result of computing the dataplane. Combines a {@link DataPlane} with a {@link
+   * Result of computing the dataplane. Combines a {@link DataPlaneContext} with a {@link
    * DataPlaneAnswerElement}
    */
   public static final class ComputeDataPlaneResult {
     public final DataPlaneAnswerElement _answerElement;
-    public final DataPlane _dataPlane;
+    public final DataPlaneContext _dataPlaneContext;
 
-    public ComputeDataPlaneResult(DataPlaneAnswerElement answerElement, DataPlane dataPlane) {
+    public ComputeDataPlaneResult(
+        DataPlaneAnswerElement answerElement, DataPlaneContext dataPlaneContext) {
       _answerElement = answerElement;
-      _dataPlane = dataPlane;
+      _dataPlaneContext = dataPlaneContext;
     }
   }
 
@@ -70,16 +72,17 @@ public abstract class DataPlanePlugin extends BatfishPlugin implements IDataPlan
 
   public abstract Set<BgpAdvertisement> getAdvertisements();
 
-  public abstract List<Flow> getHistoryFlows(DataPlane dataPlane);
+  public abstract List<Flow> getHistoryFlows(DataPlaneContext dataPlaneContext);
 
-  public abstract List<FlowTrace> getHistoryFlowTraces(DataPlane dataPlane);
+  public abstract List<FlowTrace> getHistoryFlowTraces(DataPlaneContext dataPlaneContext);
 
   public abstract ITracerouteEngine getTracerouteEngine();
 
   public abstract SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>> getRoutes(
-      DataPlane dataPlane);
+      DataPlaneContext dataPlaneContext);
 
-  public abstract void processFlows(Set<Flow> flows, DataPlane dataPlane, boolean ignoreAcls);
+  public abstract void processFlows(
+      Set<Flow> flows, DataPlaneContext dataPlaneContext, boolean ignoreAcls);
 
   /** Return the name of this plugin */
   public abstract String getName();

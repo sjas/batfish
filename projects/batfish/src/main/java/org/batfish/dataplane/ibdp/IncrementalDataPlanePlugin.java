@@ -3,6 +3,7 @@ package org.batfish.dataplane.ibdp;
 import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +19,7 @@ import org.batfish.datamodel.AbstractRoute;
 import org.batfish.datamodel.BgpAdvertisement;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Flow;
 import org.batfish.datamodel.FlowTrace;
 import org.batfish.datamodel.Topology;
@@ -52,7 +54,7 @@ public class IncrementalDataPlanePlugin extends DataPlanePlugin {
     ComputeDataPlaneResult answer =
         _engine.computeDataPlane(differentialContext, configurations, topology, externalAdverts);
     double averageRoutes =
-        ((IntermediateIncrementalDataPlane) answer._dataPlane)
+        ((IntermediateIncrementalDataPlane) answer._dataPlaneContext)
             .getNodes()
             .values()
             .stream()
@@ -79,16 +81,20 @@ public class IncrementalDataPlanePlugin extends DataPlanePlugin {
 
   @Override
   public Set<BgpAdvertisement> getAdvertisements() {
-    IntermediateIncrementalDataPlane dp = loadDataPlane();
-    return dp.getNodes()
-        .values()
-        .stream()
-        .flatMap(n -> n.getVirtualRouters().values().stream())
-        .flatMap(
-            virtualRouter ->
-                Stream.concat(
-                    virtualRouter.getSentBgpAdvertisements().stream(),
-                    virtualRouter.getReceivedBgpAdvertisements().stream()))
+    DataPlane dp = _batfish.loadDataPlane();
+    return Stream.concat(
+            dp.getReceivedBgpAdvertisements()
+                .values()
+                .stream()
+                .map(Map::values)
+                .flatMap(Collection::stream)
+                .flatMap(Collection::stream),
+            dp.getSentBgpAdvertisements()
+                .values()
+                .stream()
+                .map(Map::values)
+                .flatMap(Collection::stream)
+                .flatMap(Collection::stream))
         .collect(ImmutableSet.toImmutableSet());
   }
 
@@ -98,9 +104,9 @@ public class IncrementalDataPlanePlugin extends DataPlanePlugin {
   }
 
   @Override
-  public List<Flow> getHistoryFlows(DataPlane dataPlane) {
-    IntermediateIncrementalDataPlane dp = (IntermediateIncrementalDataPlane) dataPlane;
-    Map<Flow, Set<FlowTrace>> traces = _flowTraces.get(dp);
+  public List<Flow> getHistoryFlows(DataPlaneContext dataPlaneContext) {
+    IntermediateIncrementalDataPlane dpc = (IntermediateIncrementalDataPlane) dataPlaneContext;
+    Map<Flow, Set<FlowTrace>> traces = _flowTraces.get(dpc);
     if (traces == null) {
       return ImmutableList.of();
     }
@@ -112,9 +118,9 @@ public class IncrementalDataPlanePlugin extends DataPlanePlugin {
   }
 
   @Override
-  public List<FlowTrace> getHistoryFlowTraces(DataPlane dataPlane) {
-    IntermediateIncrementalDataPlane dp = (IntermediateIncrementalDataPlane) dataPlane;
-    Map<Flow, Set<FlowTrace>> traces = _flowTraces.get(dp);
+  public List<FlowTrace> getHistoryFlowTraces(DataPlaneContext dataPlaneContext) {
+    IntermediateIncrementalDataPlane dpc = (IntermediateIncrementalDataPlane) dataPlaneContext;
+    Map<Flow, Set<FlowTrace>> traces = _flowTraces.get(dpc);
     if (traces == null) {
       return ImmutableList.of();
     }
@@ -122,20 +128,17 @@ public class IncrementalDataPlanePlugin extends DataPlanePlugin {
   }
 
   @Override
-  public SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>> getRoutes(DataPlane dp) {
-    return IncrementalBdpEngine.getRoutes((IntermediateIncrementalDataPlane) dp);
+  public SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>> getRoutes(
+      DataPlaneContext dpc) {
+    return IncrementalBdpEngine.getRoutes((IntermediateIncrementalDataPlane) dpc);
   }
 
   @Override
-  public void processFlows(Set<Flow> flows, DataPlane dataPlane, boolean ignoreAcls) {
+  public void processFlows(Set<Flow> flows, DataPlaneContext dataPlaneContext, boolean ignoreAcls) {
     _flowTraces.put(
-        (IntermediateIncrementalDataPlane) dataPlane,
+        (IntermediateIncrementalDataPlane) dataPlaneContext,
         TracerouteEngineImpl.getInstance()
-            .processFlows(dataPlane, flows, dataPlane.getFibs(), ignoreAcls));
-  }
-
-  private IntermediateIncrementalDataPlane loadDataPlane() {
-    return (IntermediateIncrementalDataPlane) _batfish.loadDataPlane();
+            .processFlows(dataPlaneContext, flows, dataPlaneContext.getFibs(), ignoreAcls));
   }
 
   @Override

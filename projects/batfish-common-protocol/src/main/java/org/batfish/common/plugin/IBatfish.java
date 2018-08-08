@@ -19,6 +19,7 @@ import org.batfish.datamodel.AbstractRoute;
 import org.batfish.datamodel.BgpAdvertisement;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Flow;
 import org.batfish.datamodel.FlowHistory;
 import org.batfish.datamodel.Ip;
@@ -127,6 +128,8 @@ public interface IBatfish extends IPluginConsumer {
   ConvertConfigurationAnswerElement loadConvertConfigurationAnswerElementOrReparse();
 
   DataPlane loadDataPlane();
+
+  DataPlaneContext loadDataPlaneContext();
 
   SortedMap<String, BgpAdvertisementsByVrf> loadEnvironmentBgpTables();
 

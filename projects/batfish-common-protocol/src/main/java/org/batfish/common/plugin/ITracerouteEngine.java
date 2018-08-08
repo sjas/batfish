@@ -3,7 +3,7 @@ package org.batfish.common.plugin;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
-import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Fib;
 import org.batfish.datamodel.Flow;
 import org.batfish.datamodel.FlowTrace;
@@ -14,5 +14,8 @@ import org.batfish.datamodel.FlowTrace;
  */
 public interface ITracerouteEngine {
   SortedMap<Flow, Set<FlowTrace>> processFlows(
-      DataPlane dataPlane, Set<Flow> flows, Map<String, Map<String, Fib>> fibs, boolean ignoreAcls);
+      DataPlaneContext dataPlaneContext,
+      Set<Flow> flows,
+      Map<String, Map<String, Fib>> fibs,
+      boolean ignoreAcls);
 }

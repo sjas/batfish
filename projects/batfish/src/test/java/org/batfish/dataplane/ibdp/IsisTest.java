@@ -222,7 +222,7 @@ public class IsisTest {
     IntermediateIncrementalDataPlane dp =
         (IntermediateIncrementalDataPlane)
             engine.computeDataPlane(false, configurations, topology, Collections.emptySet())
-                ._dataPlane;
+                ._dataPlaneContext;
     return dp;
   }
 

@@ -1,9 +1,10 @@
 package org.batfish.datamodel;
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.Set;
 
-public interface DataPlane {
+public interface DataPlane extends Serializable {
 
   /** Mapping: hostname -> vrfName -> bgpBestPathRibRoutes */
   Map<String, Map<String, Set<BgpRoute>>> getBgpBestPathRibRoutes();
@@ -31,4 +32,7 @@ public interface DataPlane {
 
   /** Mapping: hostname -> vrfName -> receivedOspfExternalType2Routes */
   Map<String, Map<String, Set<OspfExternalType2Route>>> getReceivedOspfExternalType2Routes();
+
+  /** Mapping: hostname -> vrfName -> sentBgpAdvertisements */
+  Map<String, Map<String, Set<BgpAdvertisement>>> getSentBgpAdvertisements();
 }

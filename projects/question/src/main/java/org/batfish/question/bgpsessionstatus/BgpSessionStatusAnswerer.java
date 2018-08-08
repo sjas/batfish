@@ -25,6 +25,7 @@ import org.batfish.datamodel.BgpSessionProperties;
 import org.batfish.datamodel.BgpSessionProperties.SessionType;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Interface;
 import org.batfish.datamodel.Ip;
 import org.batfish.datamodel.NetworkConfigurations;
@@ -100,7 +101,7 @@ public class BgpSessionStatusAnswerer extends Answerer {
 
     ValueGraph<BgpPeerConfigId, BgpSessionProperties> establishedBgpTopology;
     if (question.getIncludeEstablishedCount()) {
-      DataPlane dp = _batfish.loadDataPlane();
+      DataPlaneContext dpc = _batfish.loadDataPlaneContext();
       establishedBgpTopology =
           CommonUtil.initBgpTopology(
               configurations,
@@ -108,7 +109,7 @@ public class BgpSessionStatusAnswerer extends Answerer {
               false,
               true,
               _batfish.getDataPlanePlugin().getTracerouteEngine(),
-              dp);
+              dpc);
     } else {
       establishedBgpTopology = null;
     }

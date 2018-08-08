@@ -20,6 +20,7 @@ import org.batfish.datamodel.AbstractRoute;
 import org.batfish.datamodel.BgpAdvertisement;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Flow;
 import org.batfish.datamodel.FlowHistory;
 import org.batfish.datamodel.Ip;
@@ -62,6 +63,11 @@ public class IBatfishTestAdapter implements IBatfish {
   }
 
   @Override
+  public Set<Flow> bddMultipathConsistency() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public Set<Flow> bddReducedReachability() {
     throw new UnsupportedOperationException();
   }
@@ -83,11 +89,6 @@ public class IBatfishTestAdapter implements IBatfish {
 
   @Override
   public boolean debugFlagEnabled(String flag) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public ReferenceLibrary getReferenceLibraryData() {
     throw new UnsupportedOperationException();
   }
 
@@ -169,6 +170,11 @@ public class IBatfishTestAdapter implements IBatfish {
   }
 
   @Override
+  public ReferenceLibrary getReferenceLibraryData() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>> getRoutes(
       boolean useCompression) {
     throw new UnsupportedOperationException();
@@ -238,6 +244,12 @@ public class IBatfishTestAdapter implements IBatfish {
   @Override
   public DataPlane loadDataPlane() {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public DataPlaneContext loadDataPlaneContext() {
+    throw new UnsupportedOperationException(
+        "no implementation for generated method"); // TODO Auto-generated method stub
   }
 
   @Override
@@ -414,11 +426,6 @@ public class IBatfishTestAdapter implements IBatfish {
 
   @Override
   public void writeDataPlane(DataPlane dp, DataPlaneAnswerElement ae) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public Set<Flow> bddMultipathConsistency() {
     throw new UnsupportedOperationException();
   }
 }

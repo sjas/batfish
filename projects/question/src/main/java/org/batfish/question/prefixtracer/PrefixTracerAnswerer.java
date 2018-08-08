@@ -13,6 +13,7 @@ import javax.annotation.Nullable;
 import org.batfish.common.Answerer;
 import org.batfish.common.plugin.IBatfish;
 import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Prefix;
 import org.batfish.datamodel.answers.AnswerElement;
 import org.batfish.datamodel.answers.Schema;
@@ -40,10 +41,10 @@ class PrefixTracerAnswerer extends Answerer {
   public AnswerElement answer() {
     PrefixTracerQuestion question = (PrefixTracerQuestion) _question;
     TableAnswerElement answer = new TableAnswerElement(getTableMetadata());
-    DataPlane dp = _batfish.loadDataPlane();
+    DataPlaneContext dpc = _batfish.loadDataPlaneContext();
 
     SortedMap<String, SortedMap<String, Map<Prefix, Map<String, Set<String>>>>> prefixTracingInfo =
-        dp.getPrefixTracingInfoSummary();
+        dpc.getPrefixTracingInfoSummary();
     answer.postProcessAnswer(
         question, getRows(prefixTracingInfo, question.getPrefix(), question.getNodeRegex()));
 

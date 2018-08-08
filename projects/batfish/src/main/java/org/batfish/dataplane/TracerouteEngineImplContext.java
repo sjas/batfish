@@ -27,6 +27,7 @@ import org.batfish.common.util.CommonUtil;
 import org.batfish.datamodel.AbstractRoute;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Edge;
 import org.batfish.datamodel.Fib;
 import org.batfish.datamodel.FilterResult;
@@ -168,7 +169,7 @@ class TracerouteEngineImplContext {
   }
 
   private final Map<String, Configuration> _configurations;
-  private final DataPlane _dataPlane;
+  private final DataPlaneContext _dataPlaneContext;
   private final Map<String, Map<String, Fib>> _fibs;
   private final Set<Flow> _flows;
   private final Map<Flow, Set<FlowTrace>> _flowTraces;
@@ -176,17 +177,17 @@ class TracerouteEngineImplContext {
   private final boolean _ignoreAcls;
 
   TracerouteEngineImplContext(
-      DataPlane dataPlane,
+      DataPlaneContext dataPlaneContext,
       Set<Flow> flows,
       Map<String, Map<String, Fib>> fibs,
       boolean ignoreAcls) {
-    _configurations = dataPlane.getConfigurations();
-    _dataPlane = dataPlane;
+    _configurations = dataPlaneContext.getConfigurations();
+    _dataPlaneContext = dataPlaneContext;
     _flows = flows;
     _flowTraces = new ConcurrentHashMap<>();
     _fibs = fibs;
     _ignoreAcls = ignoreAcls;
-    _forwardingAnalysis = _dataPlane.getForwardingAnalysis();
+    _forwardingAnalysis = _dataPlaneContext.getForwardingAnalysis();
   }
 
   private void collectFlowTraces(
@@ -204,7 +205,7 @@ class TracerouteEngineImplContext {
           String.format(
               "Node %s is not in the network, cannot perform traceroute", currentNodeName));
     }
-    if (_dataPlane
+    if (_dataPlaneContext
         .getIpVrfOwners()
         .getOrDefault(dstIp, ImmutableMap.of())
         .getOrDefault(currentNodeName, ImmutableSet.of())
@@ -301,7 +302,7 @@ class TracerouteEngineImplContext {
                     outgoingInterface.getSourceNats());
 
             SortedSet<Edge> edges =
-                _dataPlane.getTopology().getInterfaceEdges().get(nextHopInterface);
+                _dataPlaneContext.getTopology().getInterfaceEdges().get(nextHopInterface);
             TransmissionContext transmissionContext =
                 new TransmissionContext(
                     aclDefinitions,

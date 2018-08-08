@@ -103,6 +103,7 @@ import org.batfish.datamodel.BgpAdvertisement.BgpAdvertisementType;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.ConfigurationFormat;
 import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.DeviceType;
 import org.batfish.datamodel.Edge;
 import org.batfish.datamodel.Flow;
@@ -1036,21 +1037,21 @@ public class Batfish extends PluginConsumer implements IBatfish {
     CompressDataPlaneResult result = computeCompressedDataPlane(new HeaderSpace());
     _cachedCompressedConfigurations.put(
         getNetworkSnapshot(), new TreeMap<>(result._compressedConfigs));
-    saveDataPlane(result._compressedDataPlane, result._answerElement, true);
+    saveDataPlane(result._compressedDataPlaneContext.getDataPlane(), result._answerElement, true);
     return result;
   }
 
   public class CompressDataPlaneResult {
     public final Map<String, Configuration> _compressedConfigs;
-    public final DataPlane _compressedDataPlane;
+    public final DataPlaneContext _compressedDataPlaneContext;
     public final DataPlaneAnswerElement _answerElement;
 
     public CompressDataPlaneResult(
         Map<String, Configuration> compressedConfigs,
-        DataPlane compressedDataPlane,
+        DataPlaneContext compressedDataPlaneContext,
         DataPlaneAnswerElement answerElement) {
       _compressedConfigs = compressedConfigs;
-      _compressedDataPlane = compressedDataPlane;
+      _compressedDataPlaneContext = compressedDataPlaneContext;
       _answerElement = answerElement;
     }
   }
@@ -1072,14 +1073,14 @@ public class Batfish extends PluginConsumer implements IBatfish {
     ComputeDataPlaneResult result = dataPlanePlugin.computeDataPlane(false, configs, topo);
 
     _storage.storeCompressedConfigurations(configs, _testrigSettings.getName());
-    return new CompressDataPlaneResult(configs, result._dataPlane, result._answerElement);
+    return new CompressDataPlaneResult(configs, result._dataPlaneContext, result._answerElement);
   }
 
   @Override
   public DataPlaneAnswerElement computeDataPlane(boolean differentialContext) {
     checkEnvironmentExists();
     ComputeDataPlaneResult result = getDataPlanePlugin().computeDataPlane(differentialContext);
-    saveDataPlane(result._dataPlane, result._answerElement, false);
+    saveDataPlane(result._dataPlaneContext.getDataPlane(), result._answerElement, false);
     return result._answerElement;
   }
 

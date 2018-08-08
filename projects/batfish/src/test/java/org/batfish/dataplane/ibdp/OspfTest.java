@@ -257,7 +257,7 @@ public class OspfTest {
     IntermediateIncrementalDataPlane dp =
         (IntermediateIncrementalDataPlane)
             engine.computeDataPlane(false, configurations, topology, Collections.emptySet())
-                ._dataPlane;
+                ._dataPlaneContext;
 
     return IncrementalBdpEngine.getRoutes(dp);
   }
@@ -449,7 +449,7 @@ public class OspfTest {
     IntermediateIncrementalDataPlane dp =
         (IntermediateIncrementalDataPlane)
             engine.computeDataPlane(false, configurations, topology, Collections.emptySet())
-                ._dataPlane;
+                ._dataPlaneContext;
 
     return IncrementalBdpEngine.getRoutes(dp);
   }
