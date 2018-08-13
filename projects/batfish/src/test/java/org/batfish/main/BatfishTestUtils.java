@@ -23,6 +23,7 @@ import org.batfish.config.Settings.EnvironmentSettings;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.ConfigurationFormat;
 import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Interface;
 import org.batfish.datamodel.collections.BgpAdvertisementsByVrf;
 import org.batfish.datamodel.collections.RoutesByVrf;
@@ -44,6 +45,10 @@ public class BatfishTestUtils {
   }
 
   private static Cache<NetworkSnapshot, DataPlane> makeDataPlaneCache() {
+    return CacheBuilder.newBuilder().maximumSize(2).build();
+  }
+
+  private static Cache<NetworkSnapshot, DataPlaneContext> makeDataPlaneContextCache() {
     return CacheBuilder.newBuilder().maximumSize(2).build();
   }
 
@@ -75,6 +80,8 @@ public class BatfishTestUtils {
             testrigs,
             makeDataPlaneCache(),
             makeDataPlaneCache(),
+            makeDataPlaneContextCache(),
+            makeDataPlaneContextCache(),
             makeEnvBgpCache(),
             makeEnvRouteCache());
     if (!configurations.isEmpty()) {
@@ -124,6 +131,8 @@ public class BatfishTestUtils {
             testrigs,
             makeDataPlaneCache(),
             makeDataPlaneCache(),
+            makeDataPlaneContextCache(),
+            makeDataPlaneContextCache(),
             makeEnvBgpCache(),
             makeEnvRouteCache());
     batfish.getSettings().setDiffQuestion(true);
@@ -210,6 +219,8 @@ public class BatfishTestUtils {
             makeTestrigCache(),
             makeDataPlaneCache(),
             makeDataPlaneCache(),
+            makeDataPlaneContextCache(),
+            makeDataPlaneContextCache(),
             makeEnvBgpCache(),
             makeEnvRouteCache());
     registerDataPlanePlugins(batfish);

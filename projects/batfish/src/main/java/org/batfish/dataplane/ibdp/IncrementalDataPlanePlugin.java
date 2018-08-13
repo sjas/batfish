@@ -32,7 +32,7 @@ public class IncrementalDataPlanePlugin extends DataPlanePlugin {
 
   public static final String PLUGIN_NAME = "ibdp";
 
-  private final Map<IntermediateIncrementalDataPlane, Map<Flow, Set<FlowTrace>>> _flowTraces;
+  private final Map<IncrementalDataPlaneContext, Map<Flow, Set<FlowTrace>>> _flowTraces;
 
   private IncrementalBdpEngine _engine;
 
@@ -54,7 +54,7 @@ public class IncrementalDataPlanePlugin extends DataPlanePlugin {
     ComputeDataPlaneResult answer =
         _engine.computeDataPlane(differentialContext, configurations, topology, externalAdverts);
     double averageRoutes =
-        ((IntermediateIncrementalDataPlane) answer._dataPlaneContext)
+        ((IncrementalDataPlaneContext) answer._dataPlaneContext)
             .getNodes()
             .values()
             .stream()
@@ -105,7 +105,7 @@ public class IncrementalDataPlanePlugin extends DataPlanePlugin {
 
   @Override
   public List<Flow> getHistoryFlows(DataPlaneContext dataPlaneContext) {
-    IntermediateIncrementalDataPlane dpc = (IntermediateIncrementalDataPlane) dataPlaneContext;
+    IncrementalDataPlaneContext dpc = (IncrementalDataPlaneContext) dataPlaneContext;
     Map<Flow, Set<FlowTrace>> traces = _flowTraces.get(dpc);
     if (traces == null) {
       return ImmutableList.of();
@@ -119,7 +119,7 @@ public class IncrementalDataPlanePlugin extends DataPlanePlugin {
 
   @Override
   public List<FlowTrace> getHistoryFlowTraces(DataPlaneContext dataPlaneContext) {
-    IntermediateIncrementalDataPlane dpc = (IntermediateIncrementalDataPlane) dataPlaneContext;
+    IncrementalDataPlaneContext dpc = (IncrementalDataPlaneContext) dataPlaneContext;
     Map<Flow, Set<FlowTrace>> traces = _flowTraces.get(dpc);
     if (traces == null) {
       return ImmutableList.of();
@@ -130,13 +130,17 @@ public class IncrementalDataPlanePlugin extends DataPlanePlugin {
   @Override
   public SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>> getRoutes(
       DataPlaneContext dpc) {
-    return IncrementalBdpEngine.getRoutes((IntermediateIncrementalDataPlane) dpc);
+    if (dpc instanceof IncrementalDataPlaneContext) {
+      return IncrementalBdpEngine.getRoutes((IncrementalDataPlaneContext) dpc);
+    } else {
+      return dpc.getDataPlane().getMainRibRoutes();
+    }
   }
 
   @Override
   public void processFlows(Set<Flow> flows, DataPlaneContext dataPlaneContext, boolean ignoreAcls) {
     _flowTraces.put(
-        (IntermediateIncrementalDataPlane) dataPlaneContext,
+        (IncrementalDataPlaneContext) dataPlaneContext,
         TracerouteEngineImpl.getInstance()
             .processFlows(dataPlaneContext, flows, dataPlaneContext.getFibs(), ignoreAcls));
   }

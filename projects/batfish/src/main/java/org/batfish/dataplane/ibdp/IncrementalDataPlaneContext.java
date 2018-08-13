@@ -22,6 +22,7 @@ import org.batfish.datamodel.BgpSessionProperties;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.DataPlane;
 import org.batfish.datamodel.DataPlaneContext;
+import org.batfish.datamodel.DataPlaneImpl;
 import org.batfish.datamodel.Edge;
 import org.batfish.datamodel.Fib;
 import org.batfish.datamodel.ForwardingAnalysis;
@@ -31,7 +32,7 @@ import org.batfish.datamodel.Ip;
 import org.batfish.datamodel.Prefix;
 import org.batfish.datamodel.Topology;
 
-public final class IntermediateIncrementalDataPlane implements DataPlaneContext {
+public final class IncrementalDataPlaneContext implements DataPlaneContext {
 
   public static class Builder {
 
@@ -70,8 +71,8 @@ public final class IntermediateIncrementalDataPlane implements DataPlaneContext 
       return this;
     }
 
-    public IntermediateIncrementalDataPlane build() {
-      return new IntermediateIncrementalDataPlane(this);
+    public IncrementalDataPlaneContext build() {
+      return new IncrementalDataPlaneContext(this);
     }
   }
 
@@ -133,12 +134,19 @@ public final class IntermediateIncrementalDataPlane implements DataPlaneContext 
 
   private final Topology _topology;
 
-  private IntermediateIncrementalDataPlane(Builder builder) {
+  private Supplier<DataPlane> _dataPlane;
+
+  private IncrementalDataPlaneContext(Builder builder) {
     _bgpTopology = builder._bgpTopology;
     _ipOwners = builder._ipOwners;
     _ipVrfOwners = builder._ipVrfOwners;
     _nodes = builder._nodes;
     _topology = builder._topology;
+    _dataPlane = Suppliers.memoize(() -> initDataPlane());
+  }
+
+  private DataPlane initDataPlane() {
+    return DataPlaneImpl.builder().setMainRibRoutes(IncrementalBdpEngine.getRoutes(this)).build();
   }
 
   private Map<String, Configuration> computeConfigurations() {
@@ -279,5 +287,10 @@ public final class IntermediateIncrementalDataPlane implements DataPlaneContext 
   @Override
   public SortedSet<Edge> getTopologyEdges() {
     return _topology.getEdges();
+  }
+
+  @Override
+  public DataPlane getDataPlane() {
+    return _dataPlane.get();
   }
 }

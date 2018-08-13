@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import org.batfish.common.plugin.ITracerouteEngine;
-import org.batfish.datamodel.DataPlane;
 import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Fib;
 import org.batfish.datamodel.Flow;

@@ -12,7 +12,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import javax.annotation.Nullable;
 
-public class MockDataPlane implements DataPlane {
+public class MockDataPlaneContext implements DataPlaneContext {
 
   public static class Builder {
     private Table<String, String, Set<BgpRoute>> _bgpRoutes;
@@ -44,8 +44,8 @@ public class MockDataPlane implements DataPlane {
       _ipOwners = ImmutableMap.of();
     }
 
-    public MockDataPlane build() {
-      return new MockDataPlane(this);
+    public MockDataPlaneContext build() {
+      return new MockDataPlaneContext(this);
     }
 
     public void setBgpRoutes(Table<String, String, Set<BgpRoute>> bgpRoutes) {
@@ -83,8 +83,6 @@ public class MockDataPlane implements DataPlane {
     }
   }
 
-  private static final long serialVersionUID = 1L;
-
   public static Builder builder() {
     return new Builder();
   }
@@ -109,7 +107,7 @@ public class MockDataPlane implements DataPlane {
 
   private final SortedSet<Edge> _topologyEdges;
 
-  private MockDataPlane(Builder builder) {
+  private MockDataPlaneContext(Builder builder) {
     _bgpTopology = builder._bgpTopology;
     _configurations = builder._configurations;
     _fibs = builder._fibs;
@@ -176,5 +174,11 @@ public class MockDataPlane implements DataPlane {
   public SortedMap<String, SortedMap<String, Map<Prefix, Map<String, Set<String>>>>>
       getPrefixTracingInfoSummary() {
     return ImmutableSortedMap.of();
+  }
+
+  @Override
+  public DataPlane getDataPlane() {
+    throw new UnsupportedOperationException(
+        "no implementation for generated method"); // TODO Auto-generated method stub
   }
 }

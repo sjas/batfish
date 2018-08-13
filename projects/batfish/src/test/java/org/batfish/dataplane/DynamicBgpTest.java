@@ -14,7 +14,7 @@ import org.batfish.datamodel.AbstractRoute;
 import org.batfish.datamodel.BgpPeerConfigId;
 import org.batfish.datamodel.BgpSessionProperties;
 import org.batfish.datamodel.Configuration;
-import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.GenericRib;
 import org.batfish.datamodel.Prefix;
 import org.batfish.main.Batfish;
@@ -54,8 +54,8 @@ public class DynamicBgpTest {
             _folder);
 
     batfish.computeDataPlane(false); // compute and cache the dataPlane
-    DataPlane dp = batfish.loadDataPlane();
-    ValueGraph<BgpPeerConfigId, BgpSessionProperties> bgpTopology = dp.getBgpTopology();
+    DataPlaneContext dpc = batfish.loadDataPlaneContext();
+    ValueGraph<BgpPeerConfigId, BgpSessionProperties> bgpTopology = dpc.getBgpTopology();
 
     /*
      * Check peering edges. r1 <---> r2 has two edges, one in each direction. r2<--r3 and r2<--r4
@@ -64,7 +64,7 @@ public class DynamicBgpTest {
     assertThat(bgpTopology.edges(), hasSize(4));
 
     // Ensure routing info has been exchanged, and routes from r3/r4 exist on r1
-    GenericRib<AbstractRoute> r1Rib = dp.getRibs().get("r1").get(Configuration.DEFAULT_VRF_NAME);
+    GenericRib<AbstractRoute> r1Rib = dpc.getRibs().get("r1").get(Configuration.DEFAULT_VRF_NAME);
     assertThat(r1Rib.getRoutes(), hasItem(hasPrefix(Prefix.parse("9.9.9.33/32"))));
     assertThat(r1Rib.getRoutes(), hasItem(hasPrefix(Prefix.parse("9.9.9.44/32"))));
   }
@@ -86,8 +86,8 @@ public class DynamicBgpTest {
 
     batfish.computeDataPlane(false); // compute and cache the dataPlane
 
-    DataPlane dp = batfish.loadDataPlane();
-    ValueGraph<BgpPeerConfigId, BgpSessionProperties> bgpTopology = dp.getBgpTopology();
+    DataPlaneContext dpc = batfish.loadDataPlaneContext();
+    ValueGraph<BgpPeerConfigId, BgpSessionProperties> bgpTopology = dpc.getBgpTopology();
 
     /*
      * Check peering edges. r1 <---> r2 has two edges, one in each direction. r2<--r3 and r2<--r4
@@ -96,7 +96,7 @@ public class DynamicBgpTest {
     assertThat(bgpTopology.edges(), hasSize(4));
 
     // Ensure routing info has been exchanged, and routes from r3/r4 exist on r1
-    GenericRib<AbstractRoute> r1Rib = dp.getRibs().get("r1").get(Configuration.DEFAULT_VRF_NAME);
+    GenericRib<AbstractRoute> r1Rib = dpc.getRibs().get("r1").get(Configuration.DEFAULT_VRF_NAME);
     assertThat(r1Rib.getRoutes(), hasItem(hasPrefix(Prefix.parse("3.3.3.3/32"))));
     assertThat(r1Rib.getRoutes(), hasItem(hasPrefix(Prefix.parse("4.4.4.4/32"))));
   }
@@ -129,8 +129,8 @@ public class DynamicBgpTest {
 
     batfish.computeDataPlane(false); // compute and cache the dataPlane
 
-    DataPlane dp = batfish.loadDataPlane();
-    ValueGraph<BgpPeerConfigId, BgpSessionProperties> bgpTopology = dp.getBgpTopology();
+    DataPlaneContext dpc = batfish.loadDataPlaneContext();
+    ValueGraph<BgpPeerConfigId, BgpSessionProperties> bgpTopology = dpc.getBgpTopology();
 
     /*
      * Check peering edges. r1 <---> r2 has two edges, one in each direction. r2<--r3 valid
@@ -139,7 +139,7 @@ public class DynamicBgpTest {
     assertThat(bgpTopology.edges(), hasSize(3));
 
     // Ensure routing info has been exchanged, and routes from r3/r4 exist on r1
-    GenericRib<AbstractRoute> r1Rib = dp.getRibs().get("r1").get(Configuration.DEFAULT_VRF_NAME);
+    GenericRib<AbstractRoute> r1Rib = dpc.getRibs().get("r1").get(Configuration.DEFAULT_VRF_NAME);
     assertThat(r1Rib.getRoutes(), hasItem(hasPrefix(Prefix.parse("9.9.9.33/32"))));
     assertThat(r1Rib.getRoutes(), not(hasItem(hasPrefix(Prefix.parse("9.9.9.44/32")))));
   }

@@ -23,7 +23,6 @@ import org.batfish.common.plugin.IBatfish;
 import org.batfish.common.util.CommonUtil;
 import org.batfish.datamodel.AbstractRoute;
 import org.batfish.datamodel.BgpRoute;
-import org.batfish.datamodel.DataPlane;
 import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.GenericRib;
 import org.batfish.datamodel.Ip;

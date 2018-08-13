@@ -45,7 +45,7 @@ import org.batfish.datamodel.BgpSessionProperties;
 import org.batfish.datamodel.BgpTieBreaker;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.ConfigurationFormat;
-import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.GeneratedRoute;
 import org.batfish.datamodel.GeneratedRoute.Builder;
 import org.batfish.datamodel.Interface;
@@ -742,9 +742,9 @@ public class IncrementalDataPlanePluginTest {
     Batfish batfish = BatfishTestUtils.getBatfish(configs, _folder);
     batfish.getSettings().setDataplaneEngineName(IncrementalDataPlanePlugin.PLUGIN_NAME);
     DataPlanePlugin dataPlanePlugin = batfish.getDataPlanePlugin();
-    DataPlane dp = dataPlanePlugin.computeDataPlane(false)._dataPlaneContext;
+    DataPlaneContext dpc = dataPlanePlugin.computeDataPlane(false)._dataPlaneContext;
 
-    ValueGraph<BgpPeerConfigId, BgpSessionProperties> bgpTopology = dp.getBgpTopology();
+    ValueGraph<BgpPeerConfigId, BgpSessionProperties> bgpTopology = dpc.getBgpTopology();
 
     // N2 has proper neighbor relationship
     Set<Entry<Prefix, BgpActivePeerConfig>> n2Neighbors =
@@ -796,10 +796,10 @@ public class IncrementalDataPlanePluginTest {
         BatfishTestUtils.getBatfish(ImmutableSortedMap.of(n1.getHostname(), n1), _folder);
     batfish.getSettings().setDataplaneEngineName(IncrementalDataPlanePlugin.PLUGIN_NAME);
     DataPlanePlugin dataPlanePlugin = batfish.getDataPlanePlugin();
-    DataPlane dp = dataPlanePlugin.computeDataPlane(false)._dataPlaneContext;
+    DataPlaneContext dpc = dataPlanePlugin.computeDataPlane(false)._dataPlaneContext;
 
     assertThat(
-        dp.getRibs().get(n1.getHostname()).get(vrf.getName()).getRoutes(),
+        dpc.getRibs().get(n1.getHostname()).get(vrf.getName()).getRoutes(),
         hasItem(hasPrefix(genRoutePrefix)));
   }
 }

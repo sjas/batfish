@@ -244,7 +244,7 @@ public class RouteReflectionTest {
                     .setSrcIp(as3PeeringIp)
                     .setSrcNode("as3Edge")
                     .build()));
-    return IncrementalBdpEngine.getRoutes((IntermediateIncrementalDataPlane) dpResult._dataPlaneContext);
+    return IncrementalBdpEngine.getRoutes((IncrementalDataPlaneContext) dpResult._dataPlaneContext);
   }
 
   private SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>>
@@ -347,8 +347,8 @@ public class RouteReflectionTest {
             new BatfishLogger(BatfishLogger.LEVELSTR_OUTPUT, false),
             (s, i) -> new AtomicInteger());
     Topology topology = CommonUtil.synthesizeTopology(configurations);
-    IntermediateIncrementalDataPlane dp =
-        (IntermediateIncrementalDataPlane)
+    IncrementalDataPlaneContext dp =
+        (IncrementalDataPlaneContext)
             engine.computeDataPlane(
                     false,
                     configurations,

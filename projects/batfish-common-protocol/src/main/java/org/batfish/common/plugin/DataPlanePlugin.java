@@ -8,7 +8,6 @@ import java.util.SortedSet;
 import org.batfish.datamodel.AbstractRoute;
 import org.batfish.datamodel.BgpAdvertisement;
 import org.batfish.datamodel.Configuration;
-import org.batfish.datamodel.DataPlane;
 import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Flow;
 import org.batfish.datamodel.FlowTrace;

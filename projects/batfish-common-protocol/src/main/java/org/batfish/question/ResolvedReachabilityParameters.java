@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import org.batfish.datamodel.Configuration;
-import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.ForwardingAction;
 import org.batfish.datamodel.HeaderSpace;
 import org.batfish.datamodel.questions.InvalidReachabilityParametersException;
@@ -24,7 +24,7 @@ public final class ResolvedReachabilityParameters {
 
     private Map<String, Configuration> _configurations;
 
-    private DataPlane _dataPlane;
+    private DataPlaneContext _dataPlaneContext;
 
     private Set<String> _finalNodes;
 
@@ -58,8 +58,8 @@ public final class ResolvedReachabilityParameters {
       return this;
     }
 
-    public Builder setDataPlane(DataPlane dataPlane) {
-      _dataPlane = dataPlane;
+    public Builder setDataPlaneContext(DataPlaneContext dataPlaneContext) {
+      _dataPlaneContext = dataPlaneContext;
       return this;
     }
 
@@ -113,7 +113,7 @@ public final class ResolvedReachabilityParameters {
 
   private final Map<String, Configuration> _configurations;
 
-  private final DataPlane _dataPlane;
+  private final DataPlaneContext _dataPlaneContext;
 
   private final Set<String> _finalNodes;
 
@@ -137,7 +137,7 @@ public final class ResolvedReachabilityParameters {
       throws InvalidReachabilityParametersException {
     _actions = builder._actions;
     _configurations = builder._configurations;
-    _dataPlane = builder._dataPlane;
+    _dataPlaneContext = builder._dataPlaneContext;
     _finalNodes = builder._finalNodes;
     _forbiddenTransitNodes = builder._forbiddenTransitNodes;
     _headerSpace = builder._headerSpace;
@@ -161,8 +161,8 @@ public final class ResolvedReachabilityParameters {
     return _configurations;
   }
 
-  public DataPlane getDataPlane() {
-    return _dataPlane;
+  public DataPlaneContext getDataPlaneContext() {
+    return _dataPlaneContext;
   }
 
   public Set<String> getFinalNodes() {

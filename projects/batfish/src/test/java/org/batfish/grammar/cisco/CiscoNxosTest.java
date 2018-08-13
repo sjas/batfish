@@ -18,7 +18,7 @@ import java.util.Arrays;
 import java.util.Map;
 import org.batfish.datamodel.AbstractRoute;
 import org.batfish.datamodel.Configuration;
-import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.GenericRib;
 import org.batfish.datamodel.Ip;
 import org.batfish.datamodel.Prefix;
@@ -99,9 +99,9 @@ public class CiscoNxosTest {
     Batfish batfish = getBatfishForTestrig(testrigName, hubName, listenerName);
     batfish.loadConfigurations();
     batfish.computeDataPlane(false); // compute and cache the dataPlane
-    DataPlane dp = batfish.loadDataPlane();
+    DataPlaneContext dpc = batfish.loadDataPlaneContext();
 
-    return dp.getRibs().get(listenerName).get(Configuration.DEFAULT_VRF_NAME);
+    return dpc.getRibs().get(listenerName).get(Configuration.DEFAULT_VRF_NAME);
   }
 
   // Neighbor default-originate overrides outbound route map.

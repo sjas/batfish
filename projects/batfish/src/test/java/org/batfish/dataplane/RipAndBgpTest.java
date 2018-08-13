@@ -43,7 +43,7 @@ public class RipAndBgpTest {
     batfish.computeDataPlane(false);
     DataPlanePlugin dataPlanePlugin = batfish.getDataPlanePlugin();
     SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>> routes =
-        dataPlanePlugin.getRoutes(batfish.loadDataPlane());
+        dataPlanePlugin.getRoutes(batfish.loadDataPlaneContext());
     SortedSet<AbstractRoute> r1Routes = routes.get("r1").get(Configuration.DEFAULT_VRF_NAME);
     SortedSet<AbstractRoute> r2Routes = routes.get("r2").get(Configuration.DEFAULT_VRF_NAME);
     SortedSet<AbstractRoute> r3Routes = routes.get("r3").get(Configuration.DEFAULT_VRF_NAME);

@@ -60,6 +60,7 @@ import org.batfish.config.ConfigurationLocator;
 import org.batfish.config.Settings;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.answers.Answer;
 import org.batfish.datamodel.answers.AnswerStatus;
 import org.batfish.datamodel.collections.BgpAdvertisementsByVrf;
@@ -122,6 +123,12 @@ public class Driver {
 
   private static final Cache<NetworkSnapshot, DataPlane> CACHED_DATA_PLANES = buildDataPlaneCache();
 
+  private static final Cache<NetworkSnapshot, DataPlaneContext>
+      CACHED_COMPRESSED_DATA_PLANE_CONTEXTS = buildDataPlaneContextCache();
+
+  private static final Cache<NetworkSnapshot, DataPlaneContext> CACHED_DATA_PLANE_CONTEXTS =
+      buildDataPlaneContextCache();
+
   private static final Map<NetworkSnapshot, SortedMap<String, BgpAdvertisementsByVrf>>
       CACHED_ENVIRONMENT_BGP_TABLES = buildEnvironmentBgpTablesCache();
 
@@ -156,6 +163,10 @@ public class Driver {
       Logger.getLogger("org.glassfish.grizzly.http.server.NetworkListener");
 
   private static Cache<NetworkSnapshot, DataPlane> buildDataPlaneCache() {
+    return CacheBuilder.newBuilder().maximumSize(MAX_CACHED_DATA_PLANES).weakValues().build();
+  }
+
+  private static Cache<NetworkSnapshot, DataPlaneContext> buildDataPlaneContextCache() {
     return CacheBuilder.newBuilder().maximumSize(MAX_CACHED_DATA_PLANES).weakValues().build();
   }
 
@@ -551,6 +562,8 @@ public class Driver {
               CACHED_TESTRIGS,
               CACHED_COMPRESSED_DATA_PLANES,
               CACHED_DATA_PLANES,
+              CACHED_COMPRESSED_DATA_PLANE_CONTEXTS,
+              CACHED_DATA_PLANE_CONTEXTS,
               CACHED_ENVIRONMENT_BGP_TABLES,
               CACHED_ENVIRONMENT_ROUTING_TABLES);
 

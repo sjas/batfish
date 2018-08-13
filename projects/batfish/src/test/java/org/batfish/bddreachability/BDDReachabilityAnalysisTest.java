@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import net.sf.javabdd.BDD;
 import org.batfish.datamodel.Configuration;
-import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Flow;
 import org.batfish.datamodel.Ip;
 import org.batfish.datamodel.UniverseIpSpace;
@@ -116,9 +116,10 @@ public final class BDDReachabilityAnalysisTest {
     _batfish = BatfishTestUtils.getBatfish(_net._configs, temp);
 
     _batfish.computeDataPlane(false);
-    DataPlane dataPlane = _batfish.loadDataPlane();
+    DataPlaneContext dataPlaneContext = _batfish.loadDataPlaneContext();
     _graphFactory =
-        new BDDReachabilityAnalysisFactory(PKT, _net._configs, dataPlane.getForwardingAnalysis());
+        new BDDReachabilityAnalysisFactory(
+            PKT, _net._configs, dataPlaneContext.getForwardingAnalysis());
 
     IpSpaceAssignment assignment =
         IpSpaceAssignment.builder()

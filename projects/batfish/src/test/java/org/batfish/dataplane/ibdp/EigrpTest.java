@@ -82,7 +82,7 @@ public class EigrpTest {
    * Int:1/2   2/1      2/3   3/2      3/4   4/3
    * R1 <=========> R2 <=========> R3 <=========> R4
    */
-  private static IncrementalDataPlane computeLinearDataPlane(
+  private static IncrementalDataPlaneContext computeLinearDataPlane(
       EigrpProcessMode mode1,
       EigrpProcessMode mode2,
       EigrpProcessMode mode3,
@@ -193,7 +193,7 @@ public class EigrpTest {
    *    1/2|   1/4   4/1  | 4/3
    *     R1.O <=========> R4.O,E
    */
-  private static IncrementalDataPlane computeMultipathDataPlaneWithRedistribution(
+  private static IncrementalDataPlaneContext computeMultipathDataPlaneWithRedistribution(
       EigrpProcessMode mode1,
       EigrpProcessMode mode2,
       EigrpProcessMode mode3,
@@ -358,15 +358,16 @@ public class EigrpTest {
   }
 
   /**
-   * Builds a {@link IncrementalDataPlane} that consists of four hosts for testing.
+   * Builds a {@link IncrementalDataPlaneContext} that consists of four hosts for testing.
    *
    * @param c1 Configuration of host 1
    * @param c2 Configuration of host 2
    * @param c3 Configuration of host 3
    * @param c4 Configuration of host 4
-   * @return A new {@link IncrementalDataPlane} for the network consisting of the four hosts.
+   * @return A new {@link IncrementalDataPlaneContext} for the network consisting of the four
+   *     hosts.
    */
-  private static IncrementalDataPlane buildDataPlane(
+  private static IncrementalDataPlaneContext buildDataPlane(
       Configuration c1, Configuration c2, Configuration c3, Configuration c4) {
     SortedMap<String, Configuration> configurations =
         new ImmutableSortedMap.Builder<String, Configuration>(String::compareTo)
@@ -381,8 +382,9 @@ public class EigrpTest {
             new BatfishLogger(BatfishLogger.LEVELSTR_OUTPUT, false),
             (s, i) -> new AtomicInteger());
     Topology topology = CommonUtil.synthesizeTopology(configurations);
-    return (IncrementalDataPlane)
-        engine.computeDataPlane(false, configurations, topology, Collections.emptySet())._dataPlaneContext;
+    return (IncrementalDataPlaneContext)
+        engine.computeDataPlane(false, configurations, topology, Collections.emptySet())
+            ._dataPlaneContext;
   }
 
   /**
@@ -479,7 +481,7 @@ public class EigrpTest {
   /** Test route computation and propagation for EIGRP in classic mode */
   @Test
   public void testEigrpClassicLinearRoutes() {
-    IncrementalDataPlane dp =
+    IncrementalDataPlaneContext dp =
         computeLinearDataPlane(
             EigrpProcessMode.CLASSIC,
             EigrpProcessMode.CLASSIC,
@@ -534,7 +536,7 @@ public class EigrpTest {
   /** Test route computation, propagation, and one-way redistribution for EIGRP in classic mode */
   @Test
   public void testEigrpClassicMultipathRoutes() {
-    IncrementalDataPlane dp =
+    IncrementalDataPlaneContext dp =
         computeMultipathDataPlaneWithRedistribution(
             EigrpProcessMode.CLASSIC,
             EigrpProcessMode.CLASSIC,
@@ -591,7 +593,7 @@ public class EigrpTest {
   /** Test route computation and propagation for EIGRP in named mode */
   @Test
   public void testEigrpNamedRoutes() {
-    IncrementalDataPlane dp =
+    IncrementalDataPlaneContext dp =
         computeLinearDataPlane(
             EigrpProcessMode.NAMED,
             EigrpProcessMode.NAMED,
@@ -653,7 +655,7 @@ public class EigrpTest {
   @Ignore
   @Test
   public void testEigrpMixedRoutes() {
-    IncrementalDataPlane dp =
+    IncrementalDataPlaneContext dp =
         computeLinearDataPlane(
             EigrpProcessMode.CLASSIC,
             EigrpProcessMode.NAMED,

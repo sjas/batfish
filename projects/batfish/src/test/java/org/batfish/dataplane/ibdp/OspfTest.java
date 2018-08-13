@@ -254,8 +254,8 @@ public class OspfTest {
             new BatfishLogger(BatfishLogger.LEVELSTR_OUTPUT, false),
             (s, i) -> new AtomicInteger());
     Topology topology = CommonUtil.synthesizeTopology(configurations);
-    IntermediateIncrementalDataPlane dp =
-        (IntermediateIncrementalDataPlane)
+    IncrementalDataPlaneContext dp =
+        (IncrementalDataPlaneContext)
             engine.computeDataPlane(false, configurations, topology, Collections.emptySet())
                 ._dataPlaneContext;
 
@@ -446,8 +446,8 @@ public class OspfTest {
             new BatfishLogger(BatfishLogger.LEVELSTR_OUTPUT, false),
             (s, i) -> new AtomicInteger());
     Topology topology = CommonUtil.synthesizeTopology(configurations);
-    IntermediateIncrementalDataPlane dp =
-        (IntermediateIncrementalDataPlane)
+    IncrementalDataPlaneContext dp =
+        (IncrementalDataPlaneContext)
             engine.computeDataPlane(false, configurations, topology, Collections.emptySet())
                 ._dataPlaneContext;
 

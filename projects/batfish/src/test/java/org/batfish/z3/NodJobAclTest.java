@@ -29,7 +29,7 @@ import org.batfish.common.plugin.DataPlanePlugin;
 import org.batfish.config.Settings;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.ConfigurationFormat;
-import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Flow;
 import org.batfish.datamodel.FlowTrace;
 import org.batfish.datamodel.ForwardingAction;
@@ -134,16 +134,16 @@ public class NodJobAclTest {
     tmp.create();
     Batfish batfish = BatfishTestUtils.getBatfish(configs, tmp);
     batfish.computeDataPlane(false);
-    DataPlane dataPlane = batfish.loadDataPlane();
+    DataPlaneContext dataPlaneContext = batfish.loadDataPlaneContext();
 
     /* set up synthesizer */
-    Topology topology = new Topology(dataPlane.getTopologyEdges());
+    Topology topology = new Topology(dataPlaneContext.getTopologyEdges());
     SynthesizerInput input =
         SynthesizerInputImpl.builder()
             .setConfigurations(configs)
             .setForwardingAnalysis(
                 new ForwardingAnalysisImpl(
-                    configs, dataPlane.getRibs(), dataPlane.getFibs(), topology))
+                    configs, dataPlaneContext.getRibs(), dataPlaneContext.getFibs(), topology))
             .setSimplify(false)
             .setTopology(topology)
             .build();
@@ -188,8 +188,8 @@ public class NodJobAclTest {
 
     Set<Flow> flows = nodJob.getFlows(ingressLocationConstraints);
     DataPlanePlugin dpPlugin = batfish.getDataPlanePlugin();
-    dpPlugin.processFlows(flows, dataPlane, false);
-    List<FlowTrace> flowTraces = dpPlugin.getHistoryFlowTraces(dataPlane);
+    dpPlugin.processFlows(flows, dataPlaneContext, false);
+    List<FlowTrace> flowTraces = dpPlugin.getHistoryFlowTraces(dataPlaneContext);
     assertThat(flowTraces, hasSize(2));
     assertThat(
         flowTraces,
@@ -270,16 +270,16 @@ public class NodJobAclTest {
     tmp.create();
     Batfish batfish = BatfishTestUtils.getBatfish(configs, tmp);
     batfish.computeDataPlane(false);
-    DataPlane dataPlane = batfish.loadDataPlane();
+    DataPlaneContext dataPlaneContext = batfish.loadDataPlaneContext();
 
     /* set up synthesizer */
-    Topology topology = new Topology(dataPlane.getTopologyEdges());
+    Topology topology = new Topology(dataPlaneContext.getTopologyEdges());
     SynthesizerInput input =
         SynthesizerInputImpl.builder()
             .setConfigurations(configs)
             .setForwardingAnalysis(
                 new ForwardingAnalysisImpl(
-                    configs, dataPlane.getRibs(), dataPlane.getFibs(), topology))
+                    configs, dataPlaneContext.getRibs(), dataPlaneContext.getFibs(), topology))
             .setSimplify(false)
             .setTopology(topology)
             .build();
@@ -329,8 +329,8 @@ public class NodJobAclTest {
 
     Set<Flow> flows = nodJob.getFlows(ingressLocationConstraints);
     DataPlanePlugin dpPlugin = batfish.getDataPlanePlugin();
-    dpPlugin.processFlows(flows, dataPlane, false);
-    List<FlowTrace> flowTraces = dpPlugin.getHistoryFlowTraces(dataPlane);
+    dpPlugin.processFlows(flows, dataPlaneContext, false);
+    List<FlowTrace> flowTraces = dpPlugin.getHistoryFlowTraces(dataPlaneContext);
     assertThat(flowTraces, hasSize(1));
     assertThat(
         flowTraces,
@@ -403,10 +403,10 @@ public class NodJobAclTest {
     tmp.create();
     Batfish batfish = BatfishTestUtils.getBatfish(configs, tmp);
     batfish.computeDataPlane(false);
-    DataPlane dataPlane = batfish.loadDataPlane();
+    DataPlaneContext dataPlaneContext = batfish.loadDataPlaneContext();
 
     /* set up synthesizer */
-    Topology topology = new Topology(dataPlane.getTopologyEdges());
+    Topology topology = new Topology(dataPlaneContext.getTopologyEdges());
     HeaderSpace headerSpace =
         HeaderSpace.builder()
             .setSrcIps(ImmutableList.of(srcIp))
@@ -417,7 +417,7 @@ public class NodJobAclTest {
             .setConfigurations(configs)
             .setForwardingAnalysis(
                 new ForwardingAnalysisImpl(
-                    configs, dataPlane.getRibs(), dataPlane.getFibs(), topology))
+                    configs, dataPlaneContext.getRibs(), dataPlaneContext.getFibs(), topology))
             .setSimplify(true)
             .setSpecialize(false)
             .setHeaderSpace(headerSpace)

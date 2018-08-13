@@ -12,7 +12,7 @@ import org.batfish.common.BatfishException;
 import org.batfish.common.NetworkSnapshot;
 import org.batfish.datamodel.AclIpSpace;
 import org.batfish.datamodel.Configuration;
-import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.ForwardingAction;
 import org.batfish.datamodel.HeaderSpace;
 import org.batfish.datamodel.IpSpace;
@@ -39,7 +39,7 @@ final class ReachabilityParametersResolver {
 
   private Map<String, Configuration> _configs;
 
-  private DataPlane _dataPlane;
+  private DataPlaneContext _dataPlaneContext;
 
   private final ReachabilityParameters _params;
 
@@ -90,7 +90,7 @@ final class ReachabilityParametersResolver {
     return ResolvedReachabilityParameters.builder()
         .setActions(actions)
         .setConfigurations(resolver._configs)
-        .setDataPlane(resolver._dataPlane)
+        .setDataPlaneContext(resolver._dataPlaneContext)
         .setFinalNodes(finalNodes)
         .setForbiddenTransitNodes(forbiddenTransitNodes)
         .setHeaderSpace(resolver.resolveHeaderSpace())
@@ -221,12 +221,12 @@ final class ReachabilityParametersResolver {
       throw new BatfishException("error loading configurations");
     }
 
-    _dataPlane =
+    _dataPlaneContext =
         useCompression && useSpecializedCompression
-            ? compressionResult._compressedDataPlane
-            : _batfish.loadDataPlane(useCompression);
+            ? compressionResult._compressedDataPlaneContext
+            : _batfish.loadDataPlaneContext(useCompression);
 
-    if (_dataPlane == null) {
+    if (_dataPlaneContext == null) {
       throw new BatfishException("error loading data plane");
     }
   }

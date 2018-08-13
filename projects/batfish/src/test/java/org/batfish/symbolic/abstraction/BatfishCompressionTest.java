@@ -27,7 +27,7 @@ import org.batfish.common.plugin.IBatfish;
 import org.batfish.datamodel.AbstractRoute;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.ConfigurationFormat;
-import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Fib;
 import org.batfish.datamodel.GenericRib;
 import org.batfish.datamodel.HeaderSpace;
@@ -204,13 +204,14 @@ public class BatfishCompressionTest {
             cD.getHostname(), cD));
   }
 
-  private DataPlane getDataPlane(SortedMap<String, Configuration> configs) throws IOException {
+  private DataPlaneContext getDataPlaneContext(SortedMap<String, Configuration> configs)
+      throws IOException {
     // make sure to reconstruct the network, since compression mutates it
     TemporaryFolder tmp = new TemporaryFolder();
     tmp.create();
     Batfish batfish = BatfishTestUtils.getBatfish(configs, tmp);
     batfish.computeDataPlane(false);
-    return batfish.loadDataPlane();
+    return batfish.loadDataPlaneContext();
   }
 
   private SortedMap<String, Configuration> simpleNetwork() {
@@ -257,14 +258,14 @@ public class BatfishCompressionTest {
    */
   @Test
   public void testCompressionFibs_compressibleNetwork() throws IOException {
-    DataPlane origDataPlane = getDataPlane(compressibleNetwork());
+    DataPlaneContext origDataPlaneContext = getDataPlaneContext(compressibleNetwork());
     SortedMap<String, Configuration> compressedConfigs =
         compressNetwork(compressibleNetwork(), new HeaderSpace());
-    DataPlane compressedDataPlane = getDataPlane(compressedConfigs);
+    DataPlaneContext compressedDataPlaneContext = getDataPlaneContext(compressedConfigs);
     SortedMap<String, SortedMap<String, GenericRib<AbstractRoute>>> origRibs =
-        origDataPlane.getRibs();
+        origDataPlaneContext.getRibs();
     SortedMap<String, SortedMap<String, GenericRib<AbstractRoute>>> compressedRibs =
-        compressedDataPlane.getRibs();
+        compressedDataPlaneContext.getRibs();
 
     /* Compression removed a node */
     assertThat(compressedConfigs.entrySet(), hasSize(2));
@@ -296,9 +297,9 @@ public class BatfishCompressionTest {
             .setDstIps(ImmutableList.of(new IpWildcard(Prefix.parse("4.4.4.4/32"))))
             .build();
     SortedMap<String, Configuration> origConfigs = diamondNetwork();
-    DataPlane origDataPlane = getDataPlane(origConfigs);
-    Map<String, Map<String, Fib>> origFibs = origDataPlane.getFibs();
-    Topology origTopology = new Topology(origDataPlane.getTopologyEdges());
+    DataPlaneContext origDataPlaneContext = getDataPlaneContext(origConfigs);
+    Map<String, Map<String, Fib>> origFibs = origDataPlaneContext.getFibs();
+    Topology origTopology = new Topology(origDataPlaneContext.getTopologyEdges());
 
     /* Node A should have a route with C as a next hop. */
     assertThat(
@@ -313,16 +314,16 @@ public class BatfishCompressionTest {
     // compress a new copy since it will get mutated.
     SortedMap<String, Configuration> compressedConfigs =
         new TreeMap<>(compressNetwork(diamondNetwork(), line));
-    DataPlane compressedDataPlane = getDataPlane(compressedConfigs);
+    DataPlaneContext compressedDataPlaneContext = getDataPlaneContext(compressedConfigs);
 
     compressedConfigs.values().forEach(BatfishCompressionTest::assertIsCompressedConfig);
 
     assertThat(compressedConfigs.values(), hasSize(3));
 
     SortedMap<String, SortedMap<String, GenericRib<AbstractRoute>>> origRibs =
-        origDataPlane.getRibs();
+        origDataPlaneContext.getRibs();
     SortedMap<String, SortedMap<String, GenericRib<AbstractRoute>>> compressedRibs =
-        compressedDataPlane.getRibs();
+        compressedDataPlaneContext.getRibs();
     compressedRibs.forEach(
         (hostname, compressedRibsByVrf) ->
             compressedRibsByVrf.forEach(
@@ -351,14 +352,14 @@ public class BatfishCompressionTest {
   /** Test that compression doesn't change the fibs for this network. */
   @Test
   public void testCompressionFibs_simpleNetwork() throws IOException {
-    DataPlane origDataPlane = getDataPlane(simpleNetwork());
+    DataPlaneContext origDataPlaneContext = getDataPlaneContext(simpleNetwork());
     SortedMap<String, Configuration> compressedConfigs =
         compressNetwork(simpleNetwork(), new HeaderSpace());
-    DataPlane compressedDataPlane = getDataPlane(compressedConfigs);
+    DataPlaneContext compressedDataPlaneContext = getDataPlaneContext(compressedConfigs);
     SortedMap<String, SortedMap<String, GenericRib<AbstractRoute>>> origRibs =
-        origDataPlane.getRibs();
+        origDataPlaneContext.getRibs();
     SortedMap<String, SortedMap<String, GenericRib<AbstractRoute>>> compressedRibs =
-        compressedDataPlane.getRibs();
+        compressedDataPlaneContext.getRibs();
 
     compressedRibs.forEach(
         (hostname, compressedRibsByVrf) ->

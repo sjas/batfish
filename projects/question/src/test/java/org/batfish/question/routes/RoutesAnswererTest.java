@@ -47,11 +47,11 @@ import org.batfish.datamodel.AbstractRoute;
 import org.batfish.datamodel.BgpRoute.Builder;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.ConfigurationFormat;
-import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.GenericRib;
 import org.batfish.datamodel.Ip;
 import org.batfish.datamodel.IpSpace;
-import org.batfish.datamodel.MockDataPlane;
+import org.batfish.datamodel.MockDataPlaneContext;
 import org.batfish.datamodel.NetworkConfigurations;
 import org.batfish.datamodel.NetworkFactory;
 import org.batfish.datamodel.OriginType;
@@ -291,7 +291,7 @@ public class RoutesAnswererTest {
     AnswerElement el =
         new RoutesAnswerer(
                 new RoutesQuestion(),
-                new MockBatfish(nc, MockDataPlane.builder().setRibs(ribs).build()))
+                new MockBatfish(nc, MockDataPlaneContext.builder().setRibs(ribs).build()))
             .answer();
 
     assert el.getSummary() != null;
@@ -302,7 +302,7 @@ public class RoutesAnswererTest {
         new RoutesAnswerer(
                 new RoutesQuestion(),
                 new MockBatfish(
-                    nc, MockDataPlane.builder().setRibs(ImmutableSortedMap.of()).build()))
+                    nc, MockDataPlaneContext.builder().setRibs(ImmutableSortedMap.of()).build()))
             .answer();
     assert el.getSummary() != null;
     assertThat(el.getSummary().getNumResults(), equalTo(0));
@@ -319,11 +319,11 @@ public class RoutesAnswererTest {
   static class MockBatfish extends IBatfishTestAdapter {
 
     private final NetworkConfigurations _configs;
-    private final DataPlane _dp;
+    private final DataPlaneContext _dpc;
 
-    public MockBatfish(NetworkConfigurations configs, DataPlane dp) {
+    public MockBatfish(NetworkConfigurations configs, DataPlaneContext dpc) {
       _configs = configs;
-      _dp = dp;
+      _dpc = dpc;
     }
 
     @Override
@@ -336,8 +336,8 @@ public class RoutesAnswererTest {
     }
 
     @Override
-    public DataPlane loadDataPlane() {
-      return _dp;
+    public DataPlaneContext loadDataPlaneContext() {
+      return _dpc;
     }
 
     @Override

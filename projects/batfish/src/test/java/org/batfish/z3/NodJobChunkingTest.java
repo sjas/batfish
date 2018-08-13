@@ -17,7 +17,7 @@ import java.util.SortedMap;
 import org.batfish.config.Settings;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.ConfigurationFormat;
-import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.ForwardingAction;
 import org.batfish.datamodel.HeaderSpace;
 import org.batfish.datamodel.Interface;
@@ -46,7 +46,7 @@ import org.junit.rules.TemporaryFolder;
 public class NodJobChunkingTest {
   private NetworkFactory _nf;
   private SortedMap<String, Configuration> _configs;
-  private DataPlane _dataPlane;
+  private DataPlaneContext _dataPlaneContext;
   private Configuration _dstNode;
   private Configuration _srcNode1;
   private Configuration _srcNode2;
@@ -147,7 +147,7 @@ public class NodJobChunkingTest {
     tmp.create();
     Batfish batfish = BatfishTestUtils.getBatfish(_configs, tmp);
     batfish.computeDataPlane(false);
-    _dataPlane = batfish.loadDataPlane();
+    _dataPlaneContext = batfish.loadDataPlaneContext();
   }
 
   private void setupSynthesizer() {
@@ -155,7 +155,7 @@ public class NodJobChunkingTest {
         new Synthesizer(
             Batfish.computeSynthesizerInput(
                 _configs,
-                _dataPlane,
+                _dataPlaneContext,
                 new HeaderSpace(),
                 IpSpaceAssignment.empty(),
                 ImmutableSortedSet.of(),

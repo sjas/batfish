@@ -24,7 +24,6 @@ import org.batfish.datamodel.BgpPeerConfigId;
 import org.batfish.datamodel.BgpSessionProperties;
 import org.batfish.datamodel.BgpSessionProperties.SessionType;
 import org.batfish.datamodel.Configuration;
-import org.batfish.datamodel.DataPlane;
 import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Interface;
 import org.batfish.datamodel.Ip;

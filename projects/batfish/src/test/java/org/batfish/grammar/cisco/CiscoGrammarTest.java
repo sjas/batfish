@@ -238,7 +238,7 @@ import org.batfish.datamodel.CommunityList;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.ConfigurationFormat;
 import org.batfish.datamodel.ConnectedRoute;
-import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.DiffieHellmanGroup;
 import org.batfish.datamodel.EigrpExternalRoute;
 import org.batfish.datamodel.EncryptionAlgorithm;
@@ -1034,9 +1034,9 @@ public class CiscoGrammarTest {
             _folder);
 
     batfish.computeDataPlane(false);
-    DataPlane dp = batfish.loadDataPlane();
+    DataPlaneContext dpc = batfish.loadDataPlaneContext();
     Set<AbstractRoute> routesOnListener =
-        dp.getRibs().get("listener").get(DEFAULT_VRF_NAME).getRoutes();
+        dpc.getRibs().get("listener").get(DEFAULT_VRF_NAME).getRoutes();
 
     // Ensure that default route is advertised to and installed on listener
     assertThat(routesOnListener, hasItem(hasPrefix(Prefix.ZERO)));
@@ -1938,7 +1938,7 @@ public class CiscoGrammarTest {
 
     // Check that 1.1.1.1/32 appears on r3
     SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>> routes =
-        dataPlanePlugin.getRoutes(batfish.loadDataPlane());
+        dataPlanePlugin.getRoutes(batfish.loadDataPlaneContext());
     SortedSet<AbstractRoute> r3Routes = routes.get("r3").get(DEFAULT_VRF_NAME);
     Set<Prefix> r3Prefixes =
         r3Routes.stream().map(AbstractRoute::getNetwork).collect(Collectors.toSet());

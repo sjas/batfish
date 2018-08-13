@@ -29,7 +29,7 @@ import org.batfish.common.plugin.DataPlanePlugin;
 import org.batfish.config.Settings;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.ConfigurationFormat;
-import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Flow;
 import org.batfish.datamodel.FlowTrace;
 import org.batfish.datamodel.FlowTraceHop;
@@ -61,7 +61,7 @@ public class NodJobTest {
 
   private DataPlanePlugin _dataPlanePlugin;
   private SortedMap<String, Configuration> _configs;
-  private DataPlane _dataPlane;
+  private DataPlaneContext _dataPlaneContext;
   private Configuration _dstNode;
   private IngressLocation _ingressLocation;
   private Configuration _srcNode;
@@ -172,17 +172,17 @@ public class NodJobTest {
     Batfish batfish = BatfishTestUtils.getBatfish(_configs, tmp);
     _dataPlanePlugin = batfish.getDataPlanePlugin();
     batfish.computeDataPlane(false);
-    _dataPlane = batfish.loadDataPlane();
+    _dataPlaneContext = batfish.loadDataPlaneContext();
   }
 
   private void setupSynthesizer() {
-    Topology topology = new Topology(_dataPlane.getTopologyEdges());
+    Topology topology = new Topology(_dataPlaneContext.getTopologyEdges());
     SynthesizerInput input =
         SynthesizerInputImpl.builder()
             .setConfigurations(_configs)
             .setForwardingAnalysis(
                 new ForwardingAnalysisImpl(
-                    _configs, _dataPlane.getRibs(), _dataPlane.getFibs(), topology))
+                    _configs, _dataPlaneContext.getRibs(), _dataPlaneContext.getFibs(), topology))
             .setSimplify(false)
             .setTopology(topology)
             .build();
@@ -216,8 +216,8 @@ public class NodJobTest {
     assertThat(fieldConstraints, hasEntry(Field.SRC_IP.getName(), new Ip("1.0.0.10").asLong()));
 
     Set<Flow> flows = nodJob.getFlows(ingressLocationConstraints);
-    _dataPlanePlugin.processFlows(flows, _dataPlane, false);
-    List<FlowTrace> flowTraces = _dataPlanePlugin.getHistoryFlowTraces(_dataPlane);
+    _dataPlanePlugin.processFlows(flows, _dataPlaneContext, false);
+    List<FlowTrace> flowTraces = _dataPlanePlugin.getHistoryFlowTraces(_dataPlaneContext);
 
     flowTraces.forEach(
         trace -> {
@@ -279,8 +279,8 @@ public class NodJobTest {
     assertThat(fieldConstraints, hasEntry(Field.SRC_IP.getName(), new Ip("3.0.0.1").asLong()));
 
     Set<Flow> flows = nodJob.getFlows(ingressLocationConstraints);
-    _dataPlanePlugin.processFlows(flows, _dataPlane, false);
-    List<FlowTrace> flowTraces = _dataPlanePlugin.getHistoryFlowTraces(_dataPlane);
+    _dataPlanePlugin.processFlows(flows, _dataPlaneContext, false);
+    List<FlowTrace> flowTraces = _dataPlanePlugin.getHistoryFlowTraces(_dataPlaneContext);
 
     flowTraces.forEach(
         trace -> {

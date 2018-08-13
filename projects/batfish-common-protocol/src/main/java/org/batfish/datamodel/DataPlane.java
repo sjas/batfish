@@ -1,38 +1,40 @@
 package org.batfish.datamodel;
 
 import java.io.Serializable;
-import java.util.Map;
-import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
 
 public interface DataPlane extends Serializable {
 
-  /** Mapping: hostname -> vrfName -> bgpBestPathRibRoutes */
-  Map<String, Map<String, Set<BgpRoute>>> getBgpBestPathRibRoutes();
+  /** SortedMapping: hostname -> vrfName -> bgpBestPathRibRoutes */
+  SortedMap<String, SortedMap<String, SortedSet<BgpRoute>>> getBgpBestPathRibRoutes();
 
-  /** Mapping: hostname -> vrfName -> bgpMultipathRibRoutes */
-  Map<String, Map<String, Set<BgpRoute>>> getBgpMultipathRibRoutes();
+  /** SortedMapping: hostname -> vrfName -> bgpMultipathRibRoutes */
+  SortedMap<String, SortedMap<String, SortedSet<BgpRoute>>> getBgpMultipathRibRoutes();
 
-  /** Mapping: hostname -> vrfName -> mainRibRoutes */
-  Map<String, Map<String, Set<AbstractRoute>>> getMainRibRoutes();
+  /** SortedMapping: hostname -> vrfName -> mainRibRoutes */
+  SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>> getMainRibRoutes();
 
-  /** Mapping: hostname -> vrfName -> receivedBgpAdvertisements */
-  Map<String, Map<String, Set<BgpAdvertisement>>> getReceivedBgpAdvertisements();
+  /** SortedMapping: hostname -> vrfName -> receivedBgpAdvertisements */
+  SortedMap<String, SortedMap<String, SortedSet<BgpAdvertisement>>> getReceivedBgpAdvertisements();
 
-  /** Mapping: hostname -> vrfName -> receivedBgpRoutes */
-  Map<String, Map<String, Set<BgpRoute>>> getReceivedBgpRoutes();
+  /** SortedMapping: hostname -> vrfName -> receivedBgpRoutes */
+  SortedMap<String, SortedMap<String, SortedSet<BgpRoute>>> getReceivedBgpRoutes();
 
-  /** Mapping: hostname -> vrfName -> receivedIsisL1Routes */
-  Map<String, Map<String, Set<IsisRoute>>> getReceivedIsisL1Routes();
+  /** SortedMapping: hostname -> vrfName -> receivedIsisL1Routes */
+  SortedMap<String, SortedMap<String, SortedSet<IsisRoute>>> getReceivedIsisL1Routes();
 
-  /** Mapping: hostname -> vrfName -> receivedIsisL2Routes */
-  Map<String, Map<String, Set<IsisRoute>>> getReceivedIsisL2Routes();
+  /** SortedMapping: hostname -> vrfName -> receivedIsisL2Routes */
+  SortedMap<String, SortedMap<String, SortedSet<IsisRoute>>> getReceivedIsisL2Routes();
 
-  /** Mapping: hostname -> vrfName -> receivedOspfExternalType1Routes */
-  Map<String, Map<String, Set<OspfExternalType1Route>>> getReceivedOspfExternalType1Routes();
+  /** SortedMapping: hostname -> vrfName -> receivedOspfExternalType1Routes */
+  SortedMap<String, SortedMap<String, SortedSet<OspfExternalType1Route>>>
+      getReceivedOspfExternalType1Routes();
 
-  /** Mapping: hostname -> vrfName -> receivedOspfExternalType2Routes */
-  Map<String, Map<String, Set<OspfExternalType2Route>>> getReceivedOspfExternalType2Routes();
+  /** SortedMapping: hostname -> vrfName -> receivedOspfExternalType2Routes */
+  SortedMap<String, SortedMap<String, SortedSet<OspfExternalType2Route>>>
+      getReceivedOspfExternalType2Routes();
 
-  /** Mapping: hostname -> vrfName -> sentBgpAdvertisements */
-  Map<String, Map<String, Set<BgpAdvertisement>>> getSentBgpAdvertisements();
+  /** SortedMapping: hostname -> vrfName -> sentBgpAdvertisements */
+  SortedMap<String, SortedMap<String, SortedSet<BgpAdvertisement>>> getSentBgpAdvertisements();
 }

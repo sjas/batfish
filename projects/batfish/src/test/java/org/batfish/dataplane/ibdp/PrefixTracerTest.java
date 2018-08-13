@@ -191,8 +191,8 @@ public class PrefixTracerTest {
     batfish.getSettings().setDataplaneEngineName(IncrementalDataPlanePlugin.PLUGIN_NAME);
 
     // Test: compute dataplane
-    IntermediateIncrementalDataPlane dp =
-        (IntermediateIncrementalDataPlane) batfish.getDataPlanePlugin().computeDataPlane(false)._dataPlaneContext;
+    IncrementalDataPlaneContext dp =
+        (IncrementalDataPlaneContext) batfish.getDataPlanePlugin().computeDataPlane(false)._dataPlaneContext;
     PrefixTracer pt = dp.getPrefixTracingInfo().get("n1").get(Configuration.DEFAULT_VRF_NAME);
 
     // Assert that static was considered
@@ -216,8 +216,8 @@ public class PrefixTracerTest {
     batfish.getSettings().setDataplaneEngineName(IncrementalDataPlanePlugin.PLUGIN_NAME);
 
     // Test: compute dataplane
-    IntermediateIncrementalDataPlane dp =
-        (IntermediateIncrementalDataPlane) batfish.getDataPlanePlugin().computeDataPlane(false)._dataPlaneContext;
+    IncrementalDataPlaneContext dp =
+        (IncrementalDataPlaneContext) batfish.getDataPlanePlugin().computeDataPlane(false)._dataPlaneContext;
     PrefixTracer pt = dp.getPrefixTracingInfo().get("n1").get(Configuration.DEFAULT_VRF_NAME);
 
     // Assert that static route was filtered
@@ -233,8 +233,8 @@ public class PrefixTracerTest {
   @Test
   public void testSummarize() throws IOException {
     Batfish batfish = BatfishTestUtils.getBatfish(twoNodeNetwork(false), _folder);
-    IntermediateIncrementalDataPlane dp =
-        (IntermediateIncrementalDataPlane) batfish.getDataPlanePlugin().computeDataPlane(false)._dataPlaneContext;
+    IncrementalDataPlaneContext dp =
+        (IncrementalDataPlaneContext) batfish.getDataPlanePlugin().computeDataPlane(false)._dataPlaneContext;
     PrefixTracer pt = dp.getPrefixTracingInfo().get("n1").get(Configuration.DEFAULT_VRF_NAME);
 
     // Test: summarize pt
@@ -247,8 +247,8 @@ public class PrefixTracerTest {
   @Test
   public void testSummarizeDataplaneAccess() throws IOException {
     Batfish batfish = BatfishTestUtils.getBatfish(twoNodeNetwork(false), _folder);
-    IntermediateIncrementalDataPlane dp =
-        (IntermediateIncrementalDataPlane) batfish.getDataPlanePlugin().computeDataPlane(false)._dataPlaneContext;
+    IncrementalDataPlaneContext dp =
+        (IncrementalDataPlaneContext) batfish.getDataPlanePlugin().computeDataPlane(false)._dataPlaneContext;
 
     // Test: get summary directly from data plane
     Map<Prefix, Map<String, Set<String>>> summary =

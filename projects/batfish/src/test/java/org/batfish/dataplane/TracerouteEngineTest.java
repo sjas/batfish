@@ -23,7 +23,7 @@ import java.util.SortedMap;
 import org.batfish.common.BatfishException;
 import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.ConfigurationFormat;
-import org.batfish.datamodel.DataPlane;
+import org.batfish.datamodel.DataPlaneContext;
 import org.batfish.datamodel.Fib;
 import org.batfish.datamodel.Flow;
 import org.batfish.datamodel.FlowDisposition;
@@ -170,7 +170,7 @@ public class TracerouteEngineTest {
     SortedMap<String, Configuration> configs = ImmutableSortedMap.of(config.getHostname(), config);
     Batfish batfish = BatfishTestUtils.getBatfish(configs, _tempFolder);
     batfish.computeDataPlane(false);
-    DataPlane dp = batfish.loadDataPlane();
+    DataPlaneContext dpc = batfish.loadDataPlaneContext();
 
     // Construct flows
     Flow.Builder fb =
@@ -185,7 +185,7 @@ public class TracerouteEngineTest {
     // Compute flow traces
     SortedMap<Flow, Set<FlowTrace>> flowTraces =
         TracerouteEngineImpl.getInstance()
-            .processFlows(dp, ImmutableSet.of(flow1, flow2), dp.getFibs(), false);
+            .processFlows(dpc, ImmutableSet.of(flow1, flow2), dpc.getFibs(), false);
 
     assertThat(flowTraces, hasEntry(equalTo(flow1), contains(hasDisposition(NO_ROUTE))));
     assertThat(flowTraces, hasEntry(equalTo(flow2), contains(hasDisposition(ACCEPTED))));
@@ -219,7 +219,7 @@ public class TracerouteEngineTest {
             .build();
     Batfish batfish = BatfishTestUtils.getBatfish(configurations, _tempFolder);
     batfish.computeDataPlane(false);
-    DataPlane dp = batfish.loadDataPlane();
+    DataPlaneContext dpc = batfish.loadDataPlaneContext();
     Flow flow =
         Flow.builder()
             .setIngressNode(source.getHostname())
@@ -229,7 +229,7 @@ public class TracerouteEngineTest {
             .build();
     Set<FlowTrace> traces =
         TracerouteEngineImpl.getInstance()
-            .processFlows(dp, ImmutableSet.of(flow), dp.getFibs(), false)
+            .processFlows(dpc, ImmutableSet.of(flow), dpc.getFibs(), false)
             .get(flow);
 
     /*
@@ -404,12 +404,12 @@ public class TracerouteEngineTest {
     Batfish batfish =
         BatfishTestUtils.getBatfish(ImmutableSortedMap.of(c1.getHostname(), c1), _tempFolder);
     batfish.computeDataPlane(false);
-    DataPlane dp = batfish.loadDataPlane();
+    DataPlaneContext dpc = batfish.loadDataPlaneContext();
     TracerouteEngineImpl.getInstance()
         .processFlows(
-            dp,
+            dpc,
             ImmutableSet.of(Flow.builder().setTag("tag").setIngressNode("missingNode").build()),
-            dp.getFibs(),
+            dpc.getFibs(),
             false);
   }
 }

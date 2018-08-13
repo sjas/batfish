@@ -76,7 +76,7 @@ class IncrementalBdpEngine {
       Topology topology,
       Set<BgpAdvertisement> externalAdverts) {
     _bfLogger.resetTimer();
-    IntermediateIncrementalDataPlane.Builder dpBuilder = IntermediateIncrementalDataPlane.builder();
+    IncrementalDataPlaneContext.Builder dpBuilder = IncrementalDataPlaneContext.builder();
     _bfLogger.info("\nComputing Data Plane using iBDP\n");
 
     Map<Ip, Set<String>> ipOwners = computeIpNodeOwners(configurations, true);
@@ -106,7 +106,7 @@ class IncrementalBdpEngine {
     computeIgpDataPlane(nodes, topology, eigrpTopology, answerElement, networkConfigurations);
     computeFibs(nodes);
 
-    IntermediateIncrementalDataPlane dp = dpBuilder.build();
+    IncrementalDataPlaneContext dp = dpBuilder.build();
 
     ValueGraph<BgpPeerConfigId, BgpSessionProperties> bgpTopology =
         initBgpTopology(
@@ -504,7 +504,7 @@ class IncrementalBdpEngine {
   private boolean computeNonMonotonicPortionOfDataPlane(
       SortedMap<String, Node> nodes,
       Topology topology,
-      IntermediateIncrementalDataPlane dp,
+      IncrementalDataPlaneContext dp,
       Set<BgpAdvertisement> externalAdverts,
       IncrementalBdpAnswerElement ae,
       boolean firstPass,
@@ -722,7 +722,7 @@ class IncrementalBdpEngine {
    * routes
    */
   static SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>> getRoutes(
-      IntermediateIncrementalDataPlane dp) {
+      IncrementalDataPlaneContext dp) {
     // Scan through all Nodes and their virtual routers, retrieve main rib routes
     return toImmutableSortedMap(
         dp.getNodes(),

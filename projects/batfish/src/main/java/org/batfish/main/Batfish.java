@@ -104,6 +104,7 @@ import org.batfish.datamodel.Configuration;
 import org.batfish.datamodel.ConfigurationFormat;
 import org.batfish.datamodel.DataPlane;
 import org.batfish.datamodel.DataPlaneContext;
+import org.batfish.datamodel.DefaultDataPlaneContext;
 import org.batfish.datamodel.DeviceType;
 import org.batfish.datamodel.Edge;
 import org.batfish.datamodel.Flow;
@@ -490,6 +491,10 @@ public class Batfish extends PluginConsumer implements IBatfish {
 
   private final Cache<NetworkSnapshot, DataPlane> _cachedDataPlanes;
 
+  private final Cache<NetworkSnapshot, DataPlaneContext> _cachedCompressedDataPlaneContexts;
+
+  private final Cache<NetworkSnapshot, DataPlaneContext> _cachedDataPlaneContexts;
+
   private final Map<NetworkSnapshot, SortedMap<String, BgpAdvertisementsByVrf>>
       _cachedEnvironmentBgpTables;
 
@@ -522,6 +527,8 @@ public class Batfish extends PluginConsumer implements IBatfish {
       Cache<NetworkSnapshot, SortedMap<String, Configuration>> cachedConfigurations,
       Cache<NetworkSnapshot, DataPlane> cachedCompressedDataPlanes,
       Cache<NetworkSnapshot, DataPlane> cachedDataPlanes,
+      Cache<NetworkSnapshot, DataPlaneContext> cachedCompressedDataPlaneContexts,
+      Cache<NetworkSnapshot, DataPlaneContext> cachedDataPlaneContexts,
       Map<NetworkSnapshot, SortedMap<String, BgpAdvertisementsByVrf>> cachedEnvironmentBgpTables,
       Map<NetworkSnapshot, SortedMap<String, RoutesByVrf>> cachedEnvironmentRoutingTables) {
     super(settings.getSerializeToText());
@@ -531,6 +538,8 @@ public class Batfish extends PluginConsumer implements IBatfish {
     _cachedConfigurations = cachedConfigurations;
     _cachedCompressedDataPlanes = cachedCompressedDataPlanes;
     _cachedDataPlanes = cachedDataPlanes;
+    _cachedCompressedDataPlaneContexts = cachedCompressedDataPlaneContexts;
+    _cachedDataPlaneContexts = cachedDataPlaneContexts;
     _cachedEnvironmentBgpTables = cachedEnvironmentBgpTables;
     _cachedEnvironmentRoutingTables = cachedEnvironmentRoutingTables;
     _externalBgpAdvertisementPlugins = new TreeSet<>();
@@ -1958,7 +1967,7 @@ public class Batfish extends PluginConsumer implements IBatfish {
   @Override
   public SortedMap<String, SortedMap<String, SortedSet<AbstractRoute>>> getRoutes(
       boolean useCompression) {
-    return getDataPlanePlugin().getRoutes(loadDataPlane(useCompression));
+    return getDataPlanePlugin().getRoutes(loadDataPlaneContext(useCompression));
   }
 
   public Settings getSettings() {
@@ -2454,6 +2463,24 @@ public class Batfish extends PluginConsumer implements IBatfish {
       }
     }
     return dp;
+  }
+
+  @Override
+  public DataPlaneContext loadDataPlaneContext() {
+    return loadDataPlaneContext(false);
+  }
+
+  DataPlaneContext loadDataPlaneContext(boolean compressed) {
+    Cache<NetworkSnapshot, DataPlaneContext> cache =
+        compressed ? _cachedCompressedDataPlaneContexts : _cachedDataPlaneContexts;
+
+    NetworkSnapshot snapshot = getNetworkSnapshot();
+    DataPlaneContext dpc = cache.getIfPresent(snapshot);
+    if (dpc == null) {
+      dpc = new DefaultDataPlaneContext(loadDataPlane(compressed), getEnvironmentTopology());
+      cache.put(snapshot, dpc);
+    }
+    return dpc;
   }
 
   private DataPlaneAnswerElement loadDataPlaneAnswerElement(boolean compressed) {
@@ -3044,12 +3071,12 @@ public class Batfish extends PluginConsumer implements IBatfish {
     // TODO: maybe do something with nod answer element
     Set<Flow> flows = computeCompositeNodOutput(jobs, new NodAnswerElement());
     pushBaseEnvironment();
-    DataPlane baseDataPlane = loadDataPlane();
-    getDataPlanePlugin().processFlows(flows, baseDataPlane, false);
+    DataPlaneContext baseDataPlaneContext = loadDataPlaneContext();
+    getDataPlanePlugin().processFlows(flows, baseDataPlaneContext, false);
     popEnvironment();
     pushDeltaEnvironment();
-    DataPlane deltaDataPlane = loadDataPlane();
-    getDataPlanePlugin().processFlows(flows, deltaDataPlane, false);
+    DataPlaneContext deltaDataPlaneContext = loadDataPlaneContext();
+    getDataPlanePlugin().processFlows(flows, deltaDataPlaneContext, false);
     popEnvironment();
 
     AnswerElement answerElement = getHistory();
@@ -3083,8 +3110,8 @@ public class Batfish extends PluginConsumer implements IBatfish {
   private void populateFlowHistory(
       FlowHistory flowHistory, String envTag, Environment environment, String flowTag) {
     DataPlanePlugin dataPlanePlugin = getDataPlanePlugin();
-    List<Flow> flows = dataPlanePlugin.getHistoryFlows(loadDataPlane());
-    List<FlowTrace> flowTraces = dataPlanePlugin.getHistoryFlowTraces(loadDataPlane());
+    List<Flow> flows = dataPlanePlugin.getHistoryFlows(loadDataPlaneContext());
+    List<FlowTrace> flowTraces = dataPlanePlugin.getHistoryFlowTraces(loadDataPlaneContext());
     int numEntries = flows.size();
     for (int i = 0; i < numEntries; i++) {
       Flow flow = flows.get(i);
@@ -3260,8 +3287,8 @@ public class Batfish extends PluginConsumer implements IBatfish {
 
   @Override
   public void processFlows(Set<Flow> flows, boolean ignoreAcls) {
-    DataPlane dp = loadDataPlane();
-    getDataPlanePlugin().processFlows(flows, dp, ignoreAcls);
+    DataPlaneContext dpc = loadDataPlaneContext();
+    getDataPlanePlugin().processFlows(flows, dpc, ignoreAcls);
   }
 
   /**
@@ -3577,10 +3604,10 @@ public class Batfish extends PluginConsumer implements IBatfish {
     // TODO: maybe do something with nod answer element
     Set<Flow> flows = computeCompositeNodOutput(jobs, new NodAnswerElement());
     pushBaseEnvironment();
-    getDataPlanePlugin().processFlows(flows, loadDataPlane(), false);
+    getDataPlanePlugin().processFlows(flows, loadDataPlaneContext(), false);
     popEnvironment();
     pushDeltaEnvironment();
-    getDataPlanePlugin().processFlows(flows, loadDataPlane(), false);
+    getDataPlanePlugin().processFlows(flows, loadDataPlaneContext(), false);
     popEnvironment();
 
     AnswerElement answerElement = getHistory();
@@ -4198,14 +4225,14 @@ public class Batfish extends PluginConsumer implements IBatfish {
     Set<ForwardingAction> actions = reachabilityParameters.getActions();
 
     Map<String, Configuration> configurations = parameters.getConfigurations();
-    DataPlane dataPlane = parameters.getDataPlane();
+    DataPlaneContext dataPlaneContext = parameters.getDataPlaneContext();
     Set<String> forbiddenTransitNodes = parameters.getForbiddenTransitNodes();
     HeaderSpace headerSpace = parameters.getHeaderSpace();
     Set<String> requiredTransitNodes = parameters.getRequiredTransitNodes();
     Synthesizer dataPlaneSynthesizer =
         synthesizeDataPlane(
             configurations,
-            dataPlane,
+            dataPlaneContext,
             headerSpace,
             forbiddenTransitNodes,
             requiredTransitNodes,
@@ -4260,8 +4287,8 @@ public class Batfish extends PluginConsumer implements IBatfish {
     // run jobs and get resulting flows
     Set<Flow> flows = computeNodOutput(jobs);
 
-    DataPlane dp = loadDataPlane();
-    getDataPlanePlugin().processFlows(flows, dp, false);
+    DataPlaneContext dpc = loadDataPlaneContext();
+    getDataPlanePlugin().processFlows(flows, dpc, false);
 
     AnswerElement answerElement = getHistory();
     return answerElement;
@@ -4384,14 +4411,14 @@ public class Batfish extends PluginConsumer implements IBatfish {
   }
 
   public Synthesizer synthesizeDataPlane() {
-    return synthesizeDataPlane(loadConfigurations(), loadDataPlane());
+    return synthesizeDataPlane(loadConfigurations(), loadDataPlaneContext());
   }
 
   private Synthesizer synthesizeDataPlane(
-      Map<String, Configuration> configurations, DataPlane dataPlane) {
+      Map<String, Configuration> configurations, DataPlaneContext dataPlaneContext) {
     return synthesizeDataPlane(
         configurations,
-        dataPlane,
+        dataPlaneContext,
         new HeaderSpace(),
         ImmutableSet.of(),
         ImmutableSet.of(),
@@ -4408,8 +4435,8 @@ public class Batfish extends PluginConsumer implements IBatfish {
   @Nonnull
   private BDDReachabilityAnalysis getBddReachabilityAnalysis(BDDPacket pkt) {
     Map<String, Configuration> configurations = loadConfigurations();
-    DataPlane dataPlane = loadDataPlane();
-    ForwardingAnalysis forwardingAnalysis = dataPlane.getForwardingAnalysis();
+    DataPlaneContext dataPlaneContext = loadDataPlaneContext();
+    ForwardingAnalysis forwardingAnalysis = dataPlaneContext.getForwardingAnalysis();
     SpecifierContextImpl specifierContext = new SpecifierContextImpl(this, configurations);
     Set<Location> locations =
         new UnionLocationSpecifier(
@@ -4480,10 +4507,10 @@ public class Batfish extends PluginConsumer implements IBatfish {
   @Nonnull
   private Synthesizer synthesizeDataPlane(ResolvedReachabilityParameters parameters) {
     Map<String, Configuration> configs = parameters.getConfigurations();
-    DataPlane dataPlane = parameters.getDataPlane();
+    DataPlaneContext dataPlaneContext = parameters.getDataPlaneContext();
     return synthesizeDataPlane(
         configs,
-        dataPlane,
+        dataPlaneContext,
         parameters.getHeaderSpace(),
         parameters.getForbiddenTransitNodes(),
         parameters.getRequiredTransitNodes(),
@@ -4494,7 +4521,7 @@ public class Batfish extends PluginConsumer implements IBatfish {
   @Nonnull
   public Synthesizer synthesizeDataPlane(
       Map<String, Configuration> configurations,
-      DataPlane dataPlane,
+      DataPlaneContext dataPlaneContext,
       HeaderSpace headerSpace,
       Set<String> nonTransitNodes,
       Set<String> transitNodes,
@@ -4509,7 +4536,7 @@ public class Batfish extends PluginConsumer implements IBatfish {
         new Synthesizer(
             computeSynthesizerInput(
                 configurations,
-                dataPlane,
+                dataPlaneContext,
                 headerSpace,
                 ipSpaceAssignment,
                 transitNodes,
@@ -4532,14 +4559,14 @@ public class Batfish extends PluginConsumer implements IBatfish {
 
   public static SynthesizerInputImpl computeSynthesizerInput(
       Map<String, Configuration> configurations,
-      DataPlane dataPlane,
+      DataPlaneContext dataPlaneContext,
       HeaderSpace headerSpace,
       IpSpaceAssignment ipSpaceAssignment,
       Set<String> transitNodes,
       Set<String> nonTransitNodes,
       boolean simplify,
       boolean specialize) {
-    Topology topology = new Topology(dataPlane.getTopologyEdges());
+    Topology topology = new Topology(dataPlaneContext.getTopologyEdges());
 
     // convert Locations to IngressLocations
     Map<IngressLocation, IpSpace> ipSpacePerLocation = new HashMap<>();
@@ -4559,7 +4586,7 @@ public class Batfish extends PluginConsumer implements IBatfish {
 
     return SynthesizerInputImpl.builder()
         .setConfigurations(configurations)
-        .setForwardingAnalysis(dataPlane.getForwardingAnalysis())
+        .setForwardingAnalysis(dataPlaneContext.getForwardingAnalysis())
         .setHeaderSpace(headerSpace)
         .setSrcIpConstraints(ipSpacePerLocation)
         .setNonTransitNodes(nonTransitNodes)
