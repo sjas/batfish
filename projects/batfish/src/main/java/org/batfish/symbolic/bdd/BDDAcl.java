@@ -35,6 +35,8 @@ public class BDDAcl {
 
   private BDDPacket _pkt;
 
+  private final AclLineMatchExprToBDD _aclLineMatchExprToBDD;
+
   private BDDAcl(
       BDDPacket pkt,
       IpAccessList acl,
@@ -48,6 +50,8 @@ public class BDDAcl {
     _pkt = pkt;
     _factory = _pkt.getFactory();
     _ipSpaceEnv = ImmutableMap.copyOf(ipSpaceEnv);
+    _aclLineMatchExprToBDD =
+        new AclLineMatchExprToBDD(_factory, _pkt, _aclEnv, _ipSpaceEnv, _bddSrcManager);
   }
 
   private BDDAcl(BDDAcl other) {
@@ -58,6 +62,7 @@ public class BDDAcl {
     _factory = other._factory;
     _ipSpaceEnv = ImmutableMap.copyOf(_ipSpaceEnv);
     _pkt = other._pkt;
+    _aclLineMatchExprToBDD = other._aclLineMatchExprToBDD;
   }
 
   public static BDDAcl create(BDDPacket pkt, IpAccessList acl) {
@@ -125,14 +130,11 @@ public class BDDAcl {
 
     _bdd = _factory.zero();
 
-    AclLineMatchExprToBDD aclLineMatchExprToBDD =
-        new AclLineMatchExprToBDD(_factory, _pkt, _aclEnv, _ipSpaceEnv, _bddSrcManager);
-
     List<IpAccessListLine> lines = new ArrayList<>(_acl.getLines());
     Collections.reverse(lines);
 
     for (IpAccessListLine line : lines) {
-      BDD lineBDD = aclLineMatchExprToBDD.visit(line.getMatchCondition());
+      BDD lineBDD = _aclLineMatchExprToBDD.visit(line.getMatchCondition());
       BDD actionBDD = line.getAction() == LineAction.ACCEPT ? _factory.one() : _factory.zero();
       _bdd = lineBDD.ite(actionBDD, _bdd);
     }
@@ -140,6 +142,10 @@ public class BDDAcl {
 
   public IpAccessList getAcl() {
     return _acl;
+  }
+
+  public AclLineMatchExprToBDD getAclLineMatchExprToBDD() {
+    return _aclLineMatchExprToBDD;
   }
 
   public BDD getBdd() {
