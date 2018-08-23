@@ -1,6 +1,7 @@
 package org.batfish.main;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -25,8 +26,36 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class AclExplainerTest {
-  private static final Prefix PREFIX1 = Prefix.parse("1.0.0.0/16");
+  private static final Prefix PREFIX1_16 = Prefix.parse("1.0.0.0/16");
+  private static final Prefix PREFIX1_24 = Prefix.parse("1.0.0.0/24");
   private static final Prefix PREFIX2 = Prefix.parse("2.0.0.0/16");
+
+  private static final HeaderSpace DST_PORT_80 =
+      HeaderSpace.builder().setDstPorts(ImmutableList.of(new SubRange(80, 80))).build();
+  private static final HeaderSpace DST_PORT_22 =
+      HeaderSpace.builder().setDstPorts(ImmutableList.of(new SubRange(22, 22))).build();
+  private static final HeaderSpace DST_PORT_20_TO_30 =
+      HeaderSpace.builder().setDstPorts(ImmutableList.of(new SubRange(20, 30))).build();
+  private static final HeaderSpace DST_PREFIX1_16_DST_PORT_22 =
+      DST_PORT_22.toBuilder().setDstIps(PREFIX1_16.toIpSpace()).build();
+  private static final HeaderSpace DST_PREFIX1_24_DST_PORT_22 =
+      DST_PORT_22.toBuilder().setDstIps(PREFIX1_24.toIpSpace()).build();
+  private static final HeaderSpace DST_PREFIX2 =
+      HeaderSpace.builder().setDstIps(PREFIX2.toIpSpace()).build();
+
+  private static final IpAccessListLine PERMIT_DST_PORT_80 =
+      IpAccessListLine.acceptingHeaderSpace(DST_PORT_80);
+  private static final IpAccessListLine REJECT_DST_PREFIX1_16_DST_PORT_22 =
+      IpAccessListLine.rejectingHeaderSpace(DST_PREFIX1_16_DST_PORT_22);
+  private static final IpAccessListLine REJECT_DST_PREFIX1_24_DST_PORT_22 =
+      IpAccessListLine.rejectingHeaderSpace(DST_PREFIX1_24_DST_PORT_22);
+  private static final IpAccessListLine PERMIT_DST_PORT_22 =
+      IpAccessListLine.acceptingHeaderSpace(DST_PORT_22);
+  private static final IpAccessListLine PERMIT_DST_PORT_20_TO_30 =
+      IpAccessListLine.acceptingHeaderSpace(DST_PORT_20_TO_30);
+  private static final IpAccessListLine REJECT_DST_PREFIX2 =
+      IpAccessListLine.rejectingHeaderSpace(DST_PREFIX2);
+  private static final Builder ACL_BUILDER = IpAccessList.builder().setName("ACL");
 
   private AclLineMatchExprToBDD _aclLineMatchExprToBDD;
 
@@ -51,7 +80,7 @@ public class AclExplainerTest {
         new IpWildcard(new Ip("0.0.0.0"), new Ip("255.0.255.0"))
             .toIpSpace()
             .accept(_dstIpSpaceToBDD);
-    BDD prefix1 = PREFIX1.toIpSpace().accept(_dstIpSpaceToBDD);
+    BDD prefix1 = PREFIX1_16.toIpSpace().accept(_dstIpSpaceToBDD);
     Set<BDD> orig = ImmutableSet.of(ip1, prefix1);
     Set<BDD> reduced = ImmutableSet.of(prefix1);
 
@@ -73,32 +102,16 @@ public class AclExplainerTest {
 
   @Test
   public void makeAnswerAcls1() {
-    HeaderSpace dstPort80 =
-        HeaderSpace.builder().setDstPorts(ImmutableList.of(new SubRange(80, 80))).build();
-    HeaderSpace dstPort22 =
-        HeaderSpace.builder().setDstPorts(ImmutableList.of(new SubRange(22, 22))).build();
-    HeaderSpace dstPort20To30 =
-        HeaderSpace.builder().setDstPorts(ImmutableList.of(new SubRange(20, 30))).build();
-    HeaderSpace dstPrefix1DstPort22 = dstPort22.toBuilder().setDstIps(PREFIX1.toIpSpace()).build();
-    HeaderSpace dstPrefix2 = HeaderSpace.builder().setDstIps(PREFIX2.toIpSpace()).build();
-
-    IpAccessListLine permitDstPort80 = IpAccessListLine.acceptingHeaderSpace(dstPort80);
-    IpAccessListLine rejectDstPrefix1DstPort22 =
-        IpAccessListLine.rejectingHeaderSpace(dstPrefix1DstPort22);
-    IpAccessListLine permitDstPort22 = IpAccessListLine.acceptingHeaderSpace(dstPort22);
-    IpAccessListLine permitDstPort20To30 = IpAccessListLine.acceptingHeaderSpace(dstPort20To30);
-    IpAccessListLine rejectDstPrefix2 = IpAccessListLine.rejectingHeaderSpace(dstPrefix2);
-    Builder aclBuilder = IpAccessList.builder().setName("ACL");
     IpAccessList acl =
-        aclBuilder
+        ACL_BUILDER
             .setLines(
                 ImmutableList.of(
-                    rejectDstPrefix2,
-                    permitDstPort80,
-                    rejectDstPrefix1DstPort22,
-                    permitDstPort22,
-                    permitDstPort22,
-                    permitDstPort20To30))
+                    REJECT_DST_PREFIX2,
+                    PERMIT_DST_PORT_80,
+                    REJECT_DST_PREFIX1_16_DST_PORT_22,
+                    PERMIT_DST_PORT_22,
+                    PERMIT_DST_PORT_22,
+                    PERMIT_DST_PORT_20_TO_30))
             .build();
     List<IpAccessList> explanations =
         new AclExplainer(_aclLineMatchExprToBDD, acl).makeAnswerAcls();
@@ -106,11 +119,44 @@ public class AclExplainerTest {
     assertThat(
         explanations,
         containsInAnyOrder(
-            aclBuilder.setLines(ImmutableList.of(rejectDstPrefix2, permitDstPort80)).build(),
-            aclBuilder
+            ACL_BUILDER.setLines(ImmutableList.of(REJECT_DST_PREFIX2, PERMIT_DST_PORT_80)).build(),
+            ACL_BUILDER
                 .setLines(
                     ImmutableList.of(
-                        rejectDstPrefix2, rejectDstPrefix1DstPort22, permitDstPort20To30))
+                        REJECT_DST_PREFIX2,
+                        REJECT_DST_PREFIX1_16_DST_PORT_22,
+                        PERMIT_DST_PORT_20_TO_30))
                 .build()));
+  }
+
+  @Test
+  public void remoteRedundantRejectLines() {
+    IpAccessList acl1 =
+        ACL_BUILDER
+            .setLines(
+                ImmutableList.of(
+                    REJECT_DST_PREFIX1_24_DST_PORT_22,
+                    REJECT_DST_PREFIX1_16_DST_PORT_22,
+                    PERMIT_DST_PORT_22))
+            .build();
+    // reorder the reject lines. shouldn't make a difference
+    IpAccessList acl2 =
+        ACL_BUILDER
+            .setLines(
+                ImmutableList.of(
+                    REJECT_DST_PREFIX1_16_DST_PORT_22,
+                    REJECT_DST_PREFIX1_24_DST_PORT_22,
+                    PERMIT_DST_PORT_22))
+            .build();
+    List<IpAccessList> explanations =
+        new AclExplainer(_aclLineMatchExprToBDD, acl1).makeAnswerAcls();
+    IpAccessList explanation =
+        ACL_BUILDER
+            .setLines(ImmutableList.of(REJECT_DST_PREFIX1_16_DST_PORT_22, PERMIT_DST_PORT_22))
+            .build();
+    assertThat(explanations, contains(explanation));
+
+    explanations = new AclExplainer(_aclLineMatchExprToBDD, acl2).makeAnswerAcls();
+    assertThat(explanations, contains(explanation));
   }
 }
