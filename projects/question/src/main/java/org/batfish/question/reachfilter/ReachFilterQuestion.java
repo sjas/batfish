@@ -15,6 +15,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.batfish.common.BatfishException;
 import org.batfish.datamodel.HeaderSpace;
+import org.batfish.datamodel.IpProtocol;
 import org.batfish.datamodel.Protocol;
 import org.batfish.datamodel.SubRange;
 import org.batfish.datamodel.questions.Question;
@@ -249,6 +250,7 @@ public final class ReachFilterQuestion extends Question {
     return HeaderSpace.builder()
         .setDstPorts(_dstPorts)
         .setDstProtocols(_dstProtocols)
+        .setIpProtocols(ImmutableSortedSet.of(IpProtocol.TCP)) // hack for testing
         .setSrcPorts(_srcPorts)
         .setNegate(_complementHeaderSpace)
         .build();
