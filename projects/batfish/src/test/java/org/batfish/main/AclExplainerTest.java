@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import net.sf.javabdd.BDD;
 import org.batfish.datamodel.HeaderSpace;
@@ -19,7 +20,10 @@ import org.batfish.datamodel.IpAccessListLine;
 import org.batfish.datamodel.IpWildcard;
 import org.batfish.datamodel.Prefix;
 import org.batfish.datamodel.SubRange;
+import org.batfish.datamodel.acl.AclLineMatchExpr;
+import org.batfish.datamodel.acl.AclLineMatchExprs;
 import org.batfish.symbolic.bdd.AclLineMatchExprToBDD;
+import org.batfish.symbolic.bdd.BDDAcl;
 import org.batfish.symbolic.bdd.BDDPacket;
 import org.batfish.symbolic.bdd.IpSpaceToBDD;
 import org.junit.Before;
@@ -158,5 +162,31 @@ public class AclExplainerTest {
 
     explanations = new AclExplainer(_aclLineMatchExprToBDD, acl2).makeAnswerAcls();
     assertThat(explanations, contains(explanation));
+  }
+
+  @Test
+  public void testReferences() {
+    IpAccessList acl1 =
+        ACL_BUILDER.setLines(ImmutableList.of(PERMIT_DST_PORT_22, PERMIT_DST_PORT_80)).build();
+    AclLineMatchExpr matchAcl1 = AclLineMatchExprs.permittedByAcl("acl1");
+
+    IpAccessList acl2 =
+        ACL_BUILDER.setLines(ImmutableList.of(PERMIT_DST_PORT_22, PERMIT_DST_PORT_80)).build();
+    AclLineMatchExpr matchAcl2 = AclLineMatchExprs.permittedByAcl("acl2");
+
+    Map<String, IpAccessList> namedAcls = ImmutableMap.of("acl1", acl1, "acl2", acl2);
+
+    IpAccessList acl =
+        ACL_BUILDER
+            .setLines(
+                ImmutableList.of(
+                    IpAccessListLine.accepting().setMatchCondition(matchAcl1).build(),
+                    IpAccessListLine.accepting().setMatchCondition(matchAcl2).build()))
+            .build();
+
+    BDDAcl bddAcl = BDDAcl.create(_pkt, acl, namedAcls, ImmutableMap.of());
+    List<IpAccessList> explanations =
+        new AclExplainer(bddAcl.getAclLineMatchExprToBDD(), acl).makeAnswerAcls();
+    assertThat(explanations, containsInAnyOrder(acl1, acl2));
   }
 }

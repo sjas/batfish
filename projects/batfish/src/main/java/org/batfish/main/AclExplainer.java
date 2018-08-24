@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import net.sf.javabdd.BDD;
 import org.batfish.datamodel.IpAccessList;
 import org.batfish.datamodel.IpAccessListLine;
@@ -105,5 +106,14 @@ public final class AclExplainer {
     }
 
     return IpAccessList.builder().setName(specializedAcl.getName()).setLines(lines.build()).build();
+  }
+
+  /**
+   * Inline references to other ACLs if they occur at the top-level AclLineMatchExpr of a line
+   * (references nested within and/or/not cannot be inlined).
+   */
+  Stream<IpAccessListLine> flattenPermitLines(
+      List<IpAccessListLine> lines, Map<String, IpAccessList> namedAcls) {
+    return null;
   }
 }
