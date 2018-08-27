@@ -113,17 +113,29 @@ public class AclIpSpace extends IpSpace {
   }
 
   private static @Nullable IpSpace intersection(Spliterator<IpSpace> ipSpaces) {
-    IpSpace[] complements =
+    IpSpace[] concreteSpaces =
         StreamSupport.stream(ipSpaces, false)
             .filter(Objects::nonNull)
-            .map(IpSpace::complement)
+            .filter(ipSpace -> ipSpace != UniverseIpSpace.INSTANCE)
             .toArray(IpSpace[]::new);
 
-    if (complements.length == 0) {
+    if (concreteSpaces.length == 0) {
+      // all null or Universe
       return null;
     }
+    if (concreteSpaces.length == 1) {
+      return concreteSpaces[0];
+    }
 
-    return builder().thenRejecting(complements).thenPermitting(UniverseIpSpace.INSTANCE).build();
+    // complement each concrete space.
+    for (int i = 0; i < concreteSpaces.length; i++) {
+      if (concreteSpaces[i] == EmptyIpSpace.INSTANCE) {
+        return EmptyIpSpace.INSTANCE;
+      }
+      concreteSpaces[i] = concreteSpaces[i].complement();
+    }
+
+    return builder().thenRejecting(concreteSpaces).thenPermitting(UniverseIpSpace.INSTANCE).build();
   }
 
   public static Builder permitting(IpSpace... ipSpaces) {
@@ -151,7 +163,11 @@ public class AclIpSpace extends IpSpace {
    * {@code null} ipSpaces are ignored. If all arguments are {@code null}, returns {@code null}.
    */
   public static @Nullable IpSpace union(IpSpace... ipSpaces) {
-    return unionNonnull(Arrays.stream(ipSpaces).filter(Objects::nonNull).toArray(IpSpace[]::new));
+    return unionNonnull(
+        Arrays.stream(ipSpaces)
+            .filter(Objects::nonNull)
+            .filter(ipSpace -> ipSpace != EmptyIpSpace.INSTANCE)
+            .toArray(IpSpace[]::new));
   }
 
   /**
@@ -162,6 +178,7 @@ public class AclIpSpace extends IpSpace {
     return unionNonnull(
         StreamSupport.stream(ipSpaces.spliterator(), false)
             .filter(Objects::nonNull)
+            .filter(ipSpace -> ipSpace != EmptyIpSpace.INSTANCE)
             .toArray(IpSpace[]::new));
   }
 
