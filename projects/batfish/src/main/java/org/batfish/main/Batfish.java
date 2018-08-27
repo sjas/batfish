@@ -3,6 +3,7 @@ package org.batfish.main;
 import static java.util.stream.Collectors.toMap;
 import static org.batfish.common.util.CommonUtil.toImmutableSortedMap;
 import static org.batfish.datamodel.acl.SourcesReferencedByIpAccessLists.referencedSources;
+import static org.batfish.datamodel.acl.normalize.Normalizer.normalize;
 import static org.batfish.main.ReachabilityParametersResolver.resolveReachabilityParameters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -98,6 +99,7 @@ import org.batfish.config.Settings;
 import org.batfish.config.Settings.EnvironmentSettings;
 import org.batfish.config.Settings.TestrigSettings;
 import org.batfish.datamodel.AbstractRoute;
+import org.batfish.datamodel.AclExplanation;
 import org.batfish.datamodel.AclIpSpace;
 import org.batfish.datamodel.BgpAdvertisement;
 import org.batfish.datamodel.BgpAdvertisement.BgpAdvertisementType;
@@ -127,8 +129,11 @@ import org.batfish.datamodel.SwitchportMode;
 import org.batfish.datamodel.Topology;
 import org.batfish.datamodel.Vrf;
 import org.batfish.datamodel.acl.AclLineMatchExpr;
+import org.batfish.datamodel.acl.AndMatchExpr;
+import org.batfish.datamodel.acl.OrMatchExpr;
 import org.batfish.datamodel.acl.PermittedByAcl;
 import org.batfish.datamodel.acl.TypeMatchExprsCollector;
+import org.batfish.datamodel.acl.normalize.AclToAclLineMatchExpr;
 import org.batfish.datamodel.answers.AclLinesAnswerElementInterface;
 import org.batfish.datamodel.answers.AclLinesAnswerElementInterface.AclSpecs;
 import org.batfish.datamodel.answers.Answer;
@@ -4438,11 +4443,29 @@ public class Batfish extends PluginConsumer implements IBatfish {
     BDD headerSpaceBDD =
         new HeaderSpaceToBDD(bddPacket, node.getIpSpaces())
             .toBDD(parameters.resolveHeaderspace(specifierContext()));
-    BDD bdd =
-        BDDAcl.create(bddPacket, acl, node.getIpAccessLists(), node.getIpSpaces(), mgr)
-            .getBdd()
-            .and(headerSpaceBDD)
-            .and(mgr.isSane());
+    BDDAcl bddAcl = BDDAcl.create(bddPacket, acl, node.getIpAccessLists(), node.getIpSpaces(), mgr);
+    BDD bdd = bddAcl.getBdd().and(headerSpaceBDD).and(mgr.isSane());
+
+    AclLineMatchExpr expr = AclToAclLineMatchExpr.toAclLineMatchExpr(acl, node.getIpAccessLists());
+    AclLineMatchExpr nf = normalize(expr);
+
+    // remove unsatisfiable disjuncts
+    SortedSet<AclLineMatchExpr> disjuncts =
+        nf instanceof OrMatchExpr ? ((OrMatchExpr) nf).getDisjuncts() : ImmutableSortedSet.of(nf);
+    SortedSet<AclLineMatchExpr> satDisjuncts =
+        disjuncts
+            .stream()
+            .filter(e -> !bddAcl.getAclLineMatchExprToBDD().visit(e).isZero())
+            .map(
+                e ->
+                    e instanceof AndMatchExpr
+                        ? AclExplanation.explain(((AndMatchExpr) e).getConjuncts())
+                        : Optional.of(e))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
+    AclLineMatchExpr explanation = new OrMatchExpr(satDisjuncts);
+
     return getFlow(bddPacket, mgr, node.getHostname(), bdd);
   }
 

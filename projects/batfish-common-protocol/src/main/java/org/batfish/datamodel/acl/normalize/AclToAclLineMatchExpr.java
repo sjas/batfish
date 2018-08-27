@@ -49,7 +49,7 @@ public final class AclToAclLineMatchExpr
         new Builder<>(Comparator.naturalOrder());
     for (IpAccessListLine line : acl.getLines()) {
       AclLineMatchExpr expr = line.getMatchCondition().accept(this);
-      if (line.getAction() == LineAction.ACCEPT) {
+      if (line.getAction() == LineAction.PERMIT) {
         if (rejects.isEmpty()) {
           permitBuilder.add(expr);
         } else {

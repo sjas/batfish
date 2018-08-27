@@ -35,6 +35,15 @@ public final class Normalizer implements GenericAclLineMatchExprVisitor<AclLineM
   }
 
   private static AclLineMatchExpr and(List<AclLineMatchExpr> exprs) {
+    if (exprs.contains(FalseExpr.INSTANCE)) {
+      return FalseExpr.INSTANCE;
+    }
+    if (exprs
+        .stream()
+        .anyMatch(expr -> expr instanceof AndMatchExpr || expr instanceof OrMatchExpr)) {
+      return null;
+    }
+
     SortedSet<AclLineMatchExpr> conjuncts =
         exprs
             .stream()
@@ -44,14 +53,15 @@ public final class Normalizer implements GenericAclLineMatchExprVisitor<AclLineM
       return TrueExpr.INSTANCE;
     } else if (conjuncts.size() == 1) {
       return conjuncts.first();
-    } else if (conjuncts.contains(FalseExpr.INSTANCE)) {
-      return FalseExpr.INSTANCE;
     } else {
       return new AndMatchExpr(conjuncts);
     }
   }
 
   private static AclLineMatchExpr or(ImmutableSortedSet<AclLineMatchExpr> exprs) {
+    if (exprs.contains(TrueExpr.INSTANCE)) {
+      return TrueExpr.INSTANCE;
+    }
     SortedSet<AclLineMatchExpr> disjuncts =
         exprs
             .stream()
@@ -61,8 +71,6 @@ public final class Normalizer implements GenericAclLineMatchExprVisitor<AclLineM
       return FalseExpr.INSTANCE;
     } else if (disjuncts.size() == 1) {
       return disjuncts.first();
-    } else if (disjuncts.contains(TrueExpr.INSTANCE)) {
-      return TrueExpr.INSTANCE;
     } else {
       return new OrMatchExpr(disjuncts);
     }
@@ -81,6 +89,7 @@ public final class Normalizer implements GenericAclLineMatchExprVisitor<AclLineM
                     expr instanceof AndMatchExpr
                         ? ((AndMatchExpr) expr).getConjuncts().stream()
                         : Stream.of(expr))
+            .filter(expr -> expr != TrueExpr.INSTANCE)
             .collect(Collectors.toList());
 
     // Normalize subexpressions, combine all OR subexpressions, and then distribute the AND over
@@ -99,13 +108,18 @@ public final class Normalizer implements GenericAclLineMatchExprVisitor<AclLineM
         for (AclLineMatchExpr disjunct : orMatchExpr.getDisjuncts()) {
           for (List<AclLineMatchExpr> ands : orOfAnds) {
             List<AclLineMatchExpr> newAnds = new ArrayList<>(ands);
-            newAnds.add(disjunct);
+            if (disjunct instanceof AndMatchExpr) {
+              newAnds.addAll(((AndMatchExpr) disjunct).getConjuncts());
+            } else {
+              newAnds.add(disjunct);
+            }
             newOrOfAnds.add(newAnds);
           }
         }
         orOfAnds = newOrOfAnds;
       } else {
         // add it to each AND
+        assert !(conjunct instanceof AndMatchExpr);
         orOfAnds.forEach(ands -> ands.add(conjunct));
       }
     }
@@ -134,7 +148,7 @@ public final class Normalizer implements GenericAclLineMatchExprVisitor<AclLineM
 
   @Override
   public AclLineMatchExpr visitNotMatchExpr(NotMatchExpr notMatchExpr) {
-    return negate(notMatchExpr.getOperand());
+    return negate(notMatchExpr.getOperand().accept(this));
   }
 
   @Override

@@ -48,7 +48,7 @@ public final class AclExplainer {
     Map<BDD, Integer> lineByHeaderSpaceBDD = new HashMap<>();
     for (int lineNum = 0; lineNum < _acl.getLines().size(); lineNum++) {
       IpAccessListLine line = _acl.getLines().get(lineNum);
-      if (line.getAction() == LineAction.ACCEPT) {
+      if (line.getAction() == LineAction.PERMIT) {
         BDD matchLineBDD = _aclLineMatchExprToBDD.visit(line.getMatchCondition());
         if (matchLineBDD.isZero()) {
           continue;
@@ -99,7 +99,7 @@ public final class AclExplainer {
         continue;
       }
       // remove any earlier ACCEPT lines
-      if (i != lineNum && specializedLine.getAction() == LineAction.ACCEPT) {
+      if (i != lineNum && specializedLine.getAction() == LineAction.PERMIT) {
         continue;
       }
       lines.add(specializedLine);
