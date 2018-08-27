@@ -50,9 +50,9 @@ public final class BDDAcl {
     _pkt = pkt;
     _factory = _pkt.getFactory();
     _ipSpaceEnv = ImmutableMap.copyOf(ipSpaceEnv);
-    _bdd = computeACL(acl);
     _aclLineMatchExprToBDD =
         new AclLineMatchExprToBDD(_factory, _pkt, _aclEnv, _ipSpaceEnv, _bddSrcManager);
+    _bdd = computeACL(_aclLineMatchExprToBDD, acl);
   }
 
   private BDDAcl(BDDAcl other) {
@@ -133,16 +133,19 @@ public final class BDDAcl {
    * ACL is to deny all traffic.
    */
   @Nonnull
-  private BDD computeACL(@Nullable IpAccessList acl) {
+  private static BDD computeACL(
+      AclLineMatchExprToBDD aclLineMatchExprToBDD, @Nullable IpAccessList acl) {
+    BDDFactory bddFactory = aclLineMatchExprToBDD.getBDDPacket().getFactory();
+
     // Check if there is an ACL first
     if (acl == null) {
-      return _factory.one();
+      return bddFactory.one();
     }
 
-    BDD result = _factory.zero();
+    BDD result = bddFactory.zero();
     for (IpAccessListLine line : Lists.reverse(acl.getLines())) {
-      BDD lineBDD = _aclLineMatchExprToBDD.visit(line.getMatchCondition());
-      BDD actionBDD = line.getAction() == LineAction.PERMIT ? _factory.one() : _factory.zero();
+      BDD lineBDD = aclLineMatchExprToBDD.visit(line.getMatchCondition());
+      BDD actionBDD = line.getAction() == LineAction.PERMIT ? bddFactory.one() : bddFactory.zero();
       result = lineBDD.ite(actionBDD, result);
     }
     return result;
