@@ -14167,16 +14167,18 @@
                   "class" : "org.batfish.datamodel.acl.MatchHeaderSpace",
                   "headerSpace" : {
                     "negate" : false,
-                    "tcpFlags" : [
+                    "tcpFlagsMatchConditions" : [
                       {
-                        "ack" : true,
-                        "cwr" : false,
-                        "ece" : false,
-                        "fin" : false,
-                        "psh" : false,
-                        "rst" : false,
-                        "syn" : false,
-                        "urg" : false,
+                        "tcpFlags" : {
+                          "ack" : true,
+                          "cwr" : false,
+                          "ece" : false,
+                          "fin" : false,
+                          "psh" : false,
+                          "rst" : false,
+                          "syn" : false,
+                          "urg" : false
+                        },
                         "useAck" : true,
                         "useCwr" : false,
                         "useEce" : false,
@@ -16156,7 +16158,39 @@
                         },
                         {
                           "class" : "org.batfish.datamodel.routing_policy.expr.ExplicitAs",
+                          "as" : 8060929
+                        },
+                        {
+                          "class" : "org.batfish.datamodel.routing_policy.expr.ExplicitAs",
                           "as" : 789
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "class" : "org.batfish.datamodel.routing_policy.statement.PrependAsPath",
+                    "expr" : {
+                      "class" : "org.batfish.datamodel.routing_policy.expr.LiteralAsList",
+                      "list" : [
+                        {
+                          "class" : "org.batfish.datamodel.routing_policy.expr.ExplicitAs",
+                          "as" : 456
+                        },
+                        {
+                          "class" : "org.batfish.datamodel.routing_policy.expr.ExplicitAs",
+                          "as" : 789
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "class" : "org.batfish.datamodel.routing_policy.statement.PrependAsPath",
+                    "expr" : {
+                      "class" : "org.batfish.datamodel.routing_policy.expr.LiteralAsList",
+                      "list" : [
+                        {
+                          "class" : "org.batfish.datamodel.routing_policy.expr.ExplicitAs",
+                          "as" : 8061384
                         }
                       ]
                     }
@@ -16616,6 +16650,26 @@
               }
             ],
             "name" : "~AGGREGATE_10_0_0_0_8_RF~"
+          },
+          "~AGGREGATE_20_0_0_0_8_RF~" : {
+            "lines" : [
+              {
+                "action" : "PERMIT",
+                "ipWildcard" : "20.0.0.0/8",
+                "lengthRange" : "9-32"
+              }
+            ],
+            "name" : "~AGGREGATE_20_0_0_0_8_RF~"
+          },
+          "~AGGREGATE_30_0_0_0_8_RF~" : {
+            "lines" : [
+              {
+                "action" : "PERMIT",
+                "ipWildcard" : "30.0.0.0/8",
+                "lengthRange" : "9-32"
+              }
+            ],
+            "name" : "~AGGREGATE_30_0_0_0_8_RF~"
           }
         },
         "routingPolicies" : {
@@ -16638,6 +16692,66 @@
                   "prefixSet" : {
                     "class" : "org.batfish.datamodel.routing_policy.expr.NamedPrefixSet",
                     "name" : "~AGGREGATE_10_0_0_0_8_RF~"
+                  }
+                },
+                "trueStatements" : [
+                  {
+                    "class" : "org.batfish.datamodel.routing_policy.statement.Statements$StaticStatement",
+                    "type" : "ExitAccept"
+                  }
+                ]
+              }
+            ]
+          },
+          "~AGGREGATE_20_0_0_0_8~" : {
+            "name" : "~AGGREGATE_20_0_0_0_8~",
+            "statements" : [
+              {
+                "class" : "org.batfish.datamodel.routing_policy.statement.If",
+                "falseStatements" : [
+                  {
+                    "class" : "org.batfish.datamodel.routing_policy.statement.Statements$StaticStatement",
+                    "type" : "ExitReject"
+                  }
+                ],
+                "guard" : {
+                  "class" : "org.batfish.datamodel.routing_policy.expr.MatchPrefixSet",
+                  "prefix" : {
+                    "class" : "org.batfish.datamodel.routing_policy.expr.DestinationNetwork"
+                  },
+                  "prefixSet" : {
+                    "class" : "org.batfish.datamodel.routing_policy.expr.NamedPrefixSet",
+                    "name" : "~AGGREGATE_20_0_0_0_8_RF~"
+                  }
+                },
+                "trueStatements" : [
+                  {
+                    "class" : "org.batfish.datamodel.routing_policy.statement.Statements$StaticStatement",
+                    "type" : "ExitAccept"
+                  }
+                ]
+              }
+            ]
+          },
+          "~AGGREGATE_30_0_0_0_8~" : {
+            "name" : "~AGGREGATE_30_0_0_0_8~",
+            "statements" : [
+              {
+                "class" : "org.batfish.datamodel.routing_policy.statement.If",
+                "falseStatements" : [
+                  {
+                    "class" : "org.batfish.datamodel.routing_policy.statement.Statements$StaticStatement",
+                    "type" : "ExitReject"
+                  }
+                ],
+                "guard" : {
+                  "class" : "org.batfish.datamodel.routing_policy.expr.MatchPrefixSet",
+                  "prefix" : {
+                    "class" : "org.batfish.datamodel.routing_policy.expr.DestinationNetwork"
+                  },
+                  "prefixSet" : {
+                    "class" : "org.batfish.datamodel.routing_policy.expr.NamedPrefixSet",
+                    "name" : "~AGGREGATE_30_0_0_0_8_RF~"
                   }
                 },
                 "trueStatements" : [
@@ -16695,6 +16809,35 @@
                 "generationPolicy" : "~AGGREGATE_10_0_0_0_8~",
                 "metric" : 0,
                 "network" : "10.0.0.0/8",
+                "nextHopIp" : "AUTO/NONE(-1l)"
+              },
+              {
+                "class" : "org.batfish.datamodel.GeneratedRoute",
+                "administrativeCost" : 0,
+                "asPath" : [
+                  [
+                    8060932
+                  ]
+                ],
+                "discard" : true,
+                "generationPolicy" : "~AGGREGATE_20_0_0_0_8~",
+                "metric" : 0,
+                "network" : "20.0.0.0/8",
+                "nextHopIp" : "AUTO/NONE(-1l)"
+              },
+              {
+                "class" : "org.batfish.datamodel.GeneratedRoute",
+                "administrativeCost" : 0,
+                "asPath" : [
+                  [
+                    8060932,
+                    29884423
+                  ]
+                ],
+                "discard" : true,
+                "generationPolicy" : "~AGGREGATE_30_0_0_0_8~",
+                "metric" : 0,
+                "network" : "30.0.0.0/8",
                 "nextHopIp" : "AUTO/NONE(-1l)"
               }
             ]
@@ -24364,16 +24507,18 @@
                       "class" : "org.batfish.datamodel.IpWildcardIpSpace",
                       "ipWildcard" : "1.2.3.4/31"
                     },
-                    "tcpFlags" : [
+                    "tcpFlagsMatchConditions" : [
                       {
-                        "ack" : true,
-                        "cwr" : false,
-                        "ece" : false,
-                        "fin" : false,
-                        "psh" : false,
-                        "rst" : false,
-                        "syn" : false,
-                        "urg" : false,
+                        "tcpFlags" : {
+                          "ack" : true,
+                          "cwr" : false,
+                          "ece" : false,
+                          "fin" : false,
+                          "psh" : false,
+                          "rst" : false,
+                          "syn" : false,
+                          "urg" : false
+                        },
                         "useAck" : true,
                         "useCwr" : false,
                         "useEce" : false,
@@ -24405,16 +24550,18 @@
                       "class" : "org.batfish.datamodel.IpWildcardIpSpace",
                       "ipWildcard" : "1.2.3.4/31"
                     },
-                    "tcpFlags" : [
+                    "tcpFlagsMatchConditions" : [
                       {
-                        "ack" : false,
-                        "cwr" : false,
-                        "ece" : false,
-                        "fin" : false,
-                        "psh" : false,
-                        "rst" : true,
-                        "syn" : false,
-                        "urg" : false,
+                        "tcpFlags" : {
+                          "ack" : false,
+                          "cwr" : false,
+                          "ece" : false,
+                          "fin" : false,
+                          "psh" : false,
+                          "rst" : true,
+                          "syn" : false,
+                          "urg" : false
+                        },
                         "useAck" : false,
                         "useCwr" : false,
                         "useEce" : false,
@@ -24446,16 +24593,18 @@
                       "class" : "org.batfish.datamodel.IpWildcardIpSpace",
                       "ipWildcard" : "1.2.3.4/31"
                     },
-                    "tcpFlags" : [
+                    "tcpFlagsMatchConditions" : [
                       {
-                        "ack" : false,
-                        "cwr" : false,
-                        "ece" : false,
-                        "fin" : false,
-                        "psh" : false,
-                        "rst" : false,
-                        "syn" : true,
-                        "urg" : false,
+                        "tcpFlags" : {
+                          "ack" : false,
+                          "cwr" : false,
+                          "ece" : false,
+                          "fin" : false,
+                          "psh" : false,
+                          "rst" : false,
+                          "syn" : true,
+                          "urg" : false
+                        },
                         "useAck" : false,
                         "useCwr" : false,
                         "useEce" : false,
@@ -24466,14 +24615,16 @@
                         "useUrg" : false
                       },
                       {
-                        "ack" : true,
-                        "cwr" : false,
-                        "ece" : false,
-                        "fin" : false,
-                        "psh" : false,
-                        "rst" : false,
-                        "syn" : false,
-                        "urg" : false,
+                        "tcpFlags" : {
+                          "ack" : true,
+                          "cwr" : false,
+                          "ece" : false,
+                          "fin" : false,
+                          "psh" : false,
+                          "rst" : false,
+                          "syn" : false,
+                          "urg" : false
+                        },
                         "useAck" : true,
                         "useCwr" : false,
                         "useEce" : false,
@@ -24484,14 +24635,16 @@
                         "useUrg" : false
                       },
                       {
-                        "ack" : false,
-                        "cwr" : false,
-                        "ece" : false,
-                        "fin" : false,
-                        "psh" : false,
-                        "rst" : false,
-                        "syn" : false,
-                        "urg" : true,
+                        "tcpFlags" : {
+                          "ack" : false,
+                          "cwr" : false,
+                          "ece" : false,
+                          "fin" : false,
+                          "psh" : false,
+                          "rst" : false,
+                          "syn" : false,
+                          "urg" : true
+                        },
                         "useAck" : false,
                         "useCwr" : false,
                         "useEce" : false,
@@ -24502,14 +24655,16 @@
                         "useUrg" : true
                       },
                       {
-                        "ack" : false,
-                        "cwr" : false,
-                        "ece" : false,
-                        "fin" : false,
-                        "psh" : true,
-                        "rst" : false,
-                        "syn" : false,
-                        "urg" : false,
+                        "tcpFlags" : {
+                          "ack" : false,
+                          "cwr" : false,
+                          "ece" : false,
+                          "fin" : false,
+                          "psh" : true,
+                          "rst" : false,
+                          "syn" : false,
+                          "urg" : false
+                        },
                         "useAck" : false,
                         "useCwr" : false,
                         "useEce" : false,
@@ -24520,14 +24675,16 @@
                         "useUrg" : false
                       },
                       {
-                        "ack" : false,
-                        "cwr" : false,
-                        "ece" : false,
-                        "fin" : false,
-                        "psh" : false,
-                        "rst" : true,
-                        "syn" : false,
-                        "urg" : false,
+                        "tcpFlags" : {
+                          "ack" : false,
+                          "cwr" : false,
+                          "ece" : false,
+                          "fin" : false,
+                          "psh" : false,
+                          "rst" : true,
+                          "syn" : false,
+                          "urg" : false
+                        },
                         "useAck" : false,
                         "useCwr" : false,
                         "useEce" : false,
@@ -24538,14 +24695,16 @@
                         "useUrg" : false
                       },
                       {
-                        "ack" : false,
-                        "cwr" : false,
-                        "ece" : true,
-                        "fin" : false,
-                        "psh" : false,
-                        "rst" : false,
-                        "syn" : false,
-                        "urg" : false,
+                        "tcpFlags" : {
+                          "ack" : false,
+                          "cwr" : false,
+                          "ece" : true,
+                          "fin" : false,
+                          "psh" : false,
+                          "rst" : false,
+                          "syn" : false,
+                          "urg" : false
+                        },
                         "useAck" : false,
                         "useCwr" : false,
                         "useEce" : true,
@@ -24556,14 +24715,16 @@
                         "useUrg" : false
                       },
                       {
-                        "ack" : false,
-                        "cwr" : false,
-                        "ece" : false,
-                        "fin" : true,
-                        "psh" : false,
-                        "rst" : false,
-                        "syn" : false,
-                        "urg" : false,
+                        "tcpFlags" : {
+                          "ack" : false,
+                          "cwr" : false,
+                          "ece" : false,
+                          "fin" : true,
+                          "psh" : false,
+                          "rst" : false,
+                          "syn" : false,
+                          "urg" : false
+                        },
                         "useAck" : false,
                         "useCwr" : false,
                         "useEce" : false,
@@ -24595,16 +24756,18 @@
                       "class" : "org.batfish.datamodel.IpWildcardIpSpace",
                       "ipWildcard" : "1.2.3.4/31"
                     },
-                    "tcpFlags" : [
+                    "tcpFlagsMatchConditions" : [
                       {
-                        "ack" : false,
-                        "cwr" : false,
-                        "ece" : false,
-                        "fin" : true,
-                        "psh" : false,
-                        "rst" : false,
-                        "syn" : false,
-                        "urg" : false,
+                        "tcpFlags" : {
+                          "ack" : false,
+                          "cwr" : false,
+                          "ece" : false,
+                          "fin" : true,
+                          "psh" : false,
+                          "rst" : false,
+                          "syn" : false,
+                          "urg" : false
+                        },
                         "useAck" : false,
                         "useCwr" : false,
                         "useEce" : false,
@@ -24636,16 +24799,18 @@
                       "class" : "org.batfish.datamodel.IpWildcardIpSpace",
                       "ipWildcard" : "1.2.3.4/31"
                     },
-                    "tcpFlags" : [
+                    "tcpFlagsMatchConditions" : [
                       {
-                        "ack" : false,
-                        "cwr" : false,
-                        "ece" : false,
-                        "fin" : true,
-                        "psh" : false,
-                        "rst" : false,
-                        "syn" : false,
-                        "urg" : false,
+                        "tcpFlags" : {
+                          "ack" : false,
+                          "cwr" : false,
+                          "ece" : false,
+                          "fin" : true,
+                          "psh" : false,
+                          "rst" : false,
+                          "syn" : false,
+                          "urg" : false
+                        },
                         "useAck" : false,
                         "useCwr" : false,
                         "useEce" : false,
@@ -24656,14 +24821,16 @@
                         "useUrg" : false
                       },
                       {
-                        "ack" : true,
-                        "cwr" : false,
-                        "ece" : false,
-                        "fin" : false,
-                        "psh" : false,
-                        "rst" : false,
-                        "syn" : false,
-                        "urg" : false,
+                        "tcpFlags" : {
+                          "ack" : true,
+                          "cwr" : false,
+                          "ece" : false,
+                          "fin" : false,
+                          "psh" : false,
+                          "rst" : false,
+                          "syn" : false,
+                          "urg" : false
+                        },
                         "useAck" : true,
                         "useCwr" : false,
                         "useEce" : false,

@@ -57,21 +57,20 @@ import static org.batfish.representation.juniper.JuniperStructureUsage.SECURITY_
 import static org.batfish.representation.juniper.JuniperStructureUsage.SNMP_COMMUNITY_PREFIX_LIST;
 import static org.batfish.representation.juniper.JuniperStructureUsage.STATIC_ROUTE_NEXT_HOP_INTERFACE;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
+import com.google.common.collect.Ordering;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import javax.annotation.Nullable;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RuleContext;
@@ -117,6 +116,7 @@ import org.batfish.datamodel.SnmpServer;
 import org.batfish.datamodel.SubRange;
 import org.batfish.datamodel.SwitchportMode;
 import org.batfish.datamodel.TcpFlags;
+import org.batfish.datamodel.TcpFlagsMatchConditions;
 import org.batfish.datamodel.VrrpGroup;
 import org.batfish.datamodel.isis.IsisAuthenticationAlgorithm;
 import org.batfish.datamodel.isis.IsisHelloAuthenticationType;
@@ -156,6 +156,7 @@ import org.batfish.grammar.flatjuniper.FlatJuniperParser.B_multipathContext;
 import org.batfish.grammar.flatjuniper.FlatJuniperParser.B_neighborContext;
 import org.batfish.grammar.flatjuniper.FlatJuniperParser.B_remove_privateContext;
 import org.batfish.grammar.flatjuniper.FlatJuniperParser.B_typeContext;
+import org.batfish.grammar.flatjuniper.FlatJuniperParser.Bgp_asnContext;
 import org.batfish.grammar.flatjuniper.FlatJuniperParser.Bl_loopsContext;
 import org.batfish.grammar.flatjuniper.FlatJuniperParser.Bl_numberContext;
 import org.batfish.grammar.flatjuniper.FlatJuniperParser.Bl_privateContext;
@@ -1407,6 +1408,36 @@ public class ConfigurationBuilder extends FlatJuniperParserBaseListener {
     }
   }
 
+  @VisibleForTesting
+  long sanitizeAsn(long asn, int bytes, ParserRuleContext ctx) {
+    long mask;
+    if (bytes == 2) {
+      mask = 0xFFFF;
+    } else {
+      assert bytes == 4;
+      mask = 0xFFFFFFFF;
+    }
+    if ((asn & mask) != asn) {
+      _w.addWarning(
+          ctx,
+          ctx.getText(),
+          _parser,
+          String.format("AS number %s is out of the legal %s-byte AS range", asn, bytes));
+      return 0;
+    }
+    return asn;
+  }
+
+  private long toAsNum(Bgp_asnContext ctx) {
+    if (ctx.asn != null) {
+      return sanitizeAsn(toLong(ctx.asn), 4, ctx);
+    } else {
+      long hi = sanitizeAsn(toLong(ctx.asn4hi), 2, ctx);
+      long lo = sanitizeAsn(toLong(ctx.asn4lo), 2, ctx);
+      return (hi << 16) + lo;
+    }
+  }
+
   private static int toInt(TerminalNode node) {
     return toInt(node.getSymbol());
   }
@@ -1537,46 +1568,47 @@ public class ConfigurationBuilder extends FlatJuniperParserBaseListener {
     return new SubRange(low, high);
   }
 
-  private static TcpFlags toTcpFlags(Tcp_flags_alternativeContext ctx) {
-    TcpFlags tcpFlags = new TcpFlags();
+  private static TcpFlagsMatchConditions toTcpFlags(Tcp_flags_alternativeContext ctx) {
+    TcpFlagsMatchConditions.Builder tcpFlagsConditionsBuilder = TcpFlagsMatchConditions.builder();
+    TcpFlags.Builder tcpFlagsBuilder = TcpFlags.builder();
     for (Tcp_flags_literalContext literalCtx : ctx.literals) {
       boolean value = literalCtx.BANG() == null;
       Tcp_flags_atomContext atom = literalCtx.tcp_flags_atom();
       if (atom.ACK() != null) {
-        tcpFlags.setUseAck(true);
-        tcpFlags.setAck(value);
+        tcpFlagsConditionsBuilder.setUseAck(true);
+        tcpFlagsBuilder.setAck(value);
       } else if (atom.CWR() != null) {
-        tcpFlags.setUseCwr(true);
-        tcpFlags.setCwr(value);
+        tcpFlagsConditionsBuilder.setUseCwr(true);
+        tcpFlagsBuilder.setCwr(value);
       } else if (atom.ECE() != null) {
-        tcpFlags.setUseEce(true);
-        tcpFlags.setEce(value);
+        tcpFlagsConditionsBuilder.setUseEce(true);
+        tcpFlagsBuilder.setEce(value);
       } else if (atom.FIN() != null) {
-        tcpFlags.setUseFin(true);
-        tcpFlags.setFin(value);
+        tcpFlagsConditionsBuilder.setUseFin(true);
+        tcpFlagsBuilder.setFin(value);
       } else if (atom.PSH() != null) {
-        tcpFlags.setUsePsh(true);
-        tcpFlags.setPsh(value);
+        tcpFlagsConditionsBuilder.setUsePsh(true);
+        tcpFlagsBuilder.setPsh(value);
       } else if (atom.RST() != null) {
-        tcpFlags.setUseRst(true);
-        tcpFlags.setRst(value);
+        tcpFlagsConditionsBuilder.setUseRst(true);
+        tcpFlagsBuilder.setRst(value);
       } else if (atom.SYN() != null) {
-        tcpFlags.setUseSyn(true);
-        tcpFlags.setSyn(value);
+        tcpFlagsConditionsBuilder.setUseSyn(true);
+        tcpFlagsBuilder.setSyn(value);
       } else if (atom.URG() != null) {
-        tcpFlags.setUseUrg(true);
-        tcpFlags.setUrg(value);
+        tcpFlagsConditionsBuilder.setUseUrg(true);
+        tcpFlagsBuilder.setUrg(value);
       } else {
         throw new BatfishException("Invalid tcp-flags atom: " + atom.getText());
       }
     }
-    return tcpFlags;
+    return tcpFlagsConditionsBuilder.setTcpFlags(tcpFlagsBuilder.build()).build();
   }
 
-  private static List<TcpFlags> toTcpFlags(Tcp_flagsContext ctx) {
-    List<TcpFlags> tcpFlagsList = new ArrayList<>();
+  private static List<TcpFlagsMatchConditions> toTcpFlags(Tcp_flagsContext ctx) {
+    List<TcpFlagsMatchConditions> tcpFlagsList = new ArrayList<>();
     for (Tcp_flags_alternativeContext alternativeCtx : ctx.alternatives) {
-      TcpFlags tcpFlags = toTcpFlags(alternativeCtx);
+      TcpFlagsMatchConditions tcpFlags = toTcpFlags(alternativeCtx);
       tcpFlagsList.add(tcpFlags);
     }
     return tcpFlagsList;
@@ -3041,7 +3073,7 @@ public class ConfigurationBuilder extends FlatJuniperParserBaseListener {
 
   @Override
   public void exitBl_number(Bl_numberContext ctx) {
-    int localAs = toInt(ctx.as);
+    long localAs = toAsNum(ctx.asn);
     _currentBgpGroup.setLocalAs(localAs);
   }
 
@@ -3052,7 +3084,7 @@ public class ConfigurationBuilder extends FlatJuniperParserBaseListener {
 
   @Override
   public void exitBpa_as(Bpa_asContext ctx) {
-    long peerAs = toLong(ctx.as);
+    long peerAs = toAsNum(ctx.asn);
     _currentBgpGroup.setPeerAs(peerAs);
   }
 
@@ -3289,35 +3321,37 @@ public class ConfigurationBuilder extends FlatJuniperParserBaseListener {
 
   @Override
   public void exitFftf_tcp_established(Fftf_tcp_establishedContext ctx) {
-    List<TcpFlags> tcpFlags = new ArrayList<>();
-    TcpFlags alt1 = new TcpFlags();
-    alt1.setUseAck(true);
-    alt1.setAck(true);
-    tcpFlags.add(alt1);
-    TcpFlags alt2 = new TcpFlags();
-    alt2.setUseRst(true);
-    alt2.setRst(true);
-    tcpFlags.add(alt2);
+    List<TcpFlagsMatchConditions> tcpFlags = new ArrayList<>();
+    tcpFlags.add(
+        TcpFlagsMatchConditions.builder()
+            .setTcpFlags(TcpFlags.builder().setAck(true).build())
+            .setUseAck(true)
+            .build());
+    tcpFlags.add(
+        TcpFlagsMatchConditions.builder()
+            .setTcpFlags(TcpFlags.builder().setRst(true).build())
+            .setUseRst(true)
+            .build());
     FwFrom from = new FwFromTcpFlags(tcpFlags);
     _currentFwTerm.getFroms().add(from);
   }
 
   @Override
   public void exitFftf_tcp_flags(Fftf_tcp_flagsContext ctx) {
-    List<TcpFlags> tcpFlags = toTcpFlags(ctx.tcp_flags());
+    List<TcpFlagsMatchConditions> tcpFlags = toTcpFlags(ctx.tcp_flags());
     FwFrom from = new FwFromTcpFlags(tcpFlags);
     _currentFwTerm.getFroms().add(from);
   }
 
   @Override
   public void exitFftf_tcp_initial(Fftf_tcp_initialContext ctx) {
-    List<TcpFlags> tcpFlags = new ArrayList<>();
-    TcpFlags alt1 = new TcpFlags();
-    alt1.setUseAck(true);
-    alt1.setAck(false);
-    alt1.setUseSyn(true);
-    alt1.setSyn(true);
-    tcpFlags.add(alt1);
+    List<TcpFlagsMatchConditions> tcpFlags = new ArrayList<>();
+    tcpFlags.add(
+        TcpFlagsMatchConditions.builder()
+            .setTcpFlags(TcpFlags.builder().setAck(true).setSyn(true).build())
+            .setUseAck(true)
+            .setUseSyn(true)
+            .build());
     FwFrom from = new FwFromTcpFlags(tcpFlags);
     _currentFwTerm.getFroms().add(from);
   }
@@ -3998,19 +4032,8 @@ public class ConfigurationBuilder extends FlatJuniperParserBaseListener {
 
   @Override
   public void exitPopst_as_path_prepend(Popst_as_path_prependContext ctx) {
-    List<Long> asPaths = new LinkedList<>();
-    if (ctx.DEC() != null) {
-      asPaths.add(toLong(ctx.DEC()));
-    } else if (ctx.DOUBLE_QUOTED_STRING() != null) {
-      String[] unquoted = unquote(ctx.DOUBLE_QUOTED_STRING().getText()).split("\\s+");
-      Arrays.stream(unquoted).map(Long::parseLong).forEach(asPaths::add);
-    } else {
-      _w.redFlag(
-          String.format(
-              "unimplemented 'policy-options policy-statement term' then clause: %s",
-              getFullText(ctx)));
-      return;
-    }
+    List<Long> asPaths =
+        ctx.bgp_asn().stream().map(this::toAsNum).collect(ImmutableList.toImmutableList());
     _currentPsThens.add(new PsThenAsPathPrepend(asPaths));
   }
 
@@ -4156,8 +4179,8 @@ public class ConfigurationBuilder extends FlatJuniperParserBaseListener {
 
   @Override
   public void exitRo_autonomous_system(Ro_autonomous_systemContext ctx) {
-    if (ctx.as != null) {
-      int as = toInt(ctx.as);
+    if (ctx.asn != null) {
+      long as = toAsNum(ctx.asn);
       _currentRoutingInstance.setAs(as);
     }
   }
@@ -5103,19 +5126,21 @@ public class ConfigurationBuilder extends FlatJuniperParserBaseListener {
     return proposals;
   }
 
-  private AsPath toAsPath(As_path_exprContext path) {
-    List<SortedSet<Long>> asPath = new ArrayList<>();
-    for (As_unitContext ctx : path.items) {
-      SortedSet<Long> asSet = new TreeSet<>();
-      if (ctx.DEC() != null) {
-        asSet.add(toLong(ctx.DEC()));
-      } else {
-        for (Token token : ctx.as_set().items) {
-          asSet.add(toLong(token));
-        }
-      }
-      asPath.add(asSet);
+  private SortedSet<Long> toAsSet(As_unitContext ctx) {
+    if (ctx.bgp_asn() != null) {
+      return ImmutableSortedSet.of(toAsNum(ctx.bgp_asn()));
+    } else {
+      return ctx.as_set()
+          .items
+          .stream()
+          .map(this::toAsNum)
+          .collect(ImmutableSortedSet.toImmutableSortedSet(Ordering.natural()));
     }
+  }
+
+  private AsPath toAsPath(As_path_exprContext path) {
+    List<SortedSet<Long>> asPath =
+        path.items.stream().map(this::toAsSet).collect(ImmutableList.toImmutableList());
     return new AsPath(asPath);
   }
 

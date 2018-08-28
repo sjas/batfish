@@ -17,12 +17,12 @@ import org.batfish.question.ReachabilityParameters;
 import org.batfish.specifier.AllNodesNodeSpecifier;
 import org.batfish.specifier.FlexibleInferFromLocationIpSpaceSpecifierFactory;
 import org.batfish.specifier.FlexibleLocationSpecifierFactory;
+import org.batfish.specifier.FlexibleUniverseIpSpaceSpecifierFactory;
 import org.batfish.specifier.IpSpaceSpecifier;
 import org.batfish.specifier.IpSpaceSpecifierFactory;
 import org.batfish.specifier.LocationSpecifier;
 import org.batfish.specifier.LocationSpecifierFactory;
 import org.batfish.specifier.NameRegexNodeSpecifierFactory;
-import org.batfish.specifier.NodeNameRegexConnectedHostsIpSpaceSpecifierFactory;
 import org.batfish.specifier.NodeSpecifier;
 import org.batfish.specifier.NodeSpecifierFactory;
 
@@ -32,7 +32,7 @@ import org.batfish.specifier.NodeSpecifierFactory;
  */
 public final class SpecifiersReachabilityQuestion extends Question {
   private static final String DEFAULT_DESTINATION_IP_SPACE_SPECIFIER_FACTORY =
-      NodeNameRegexConnectedHostsIpSpaceSpecifierFactory.NAME;
+      FlexibleUniverseIpSpaceSpecifierFactory.NAME;
 
   private static final String DEFAULT_SOURCE_IP_SPACE_SPECIFIER_FACTORY =
       FlexibleInferFromLocationIpSpaceSpecifierFactory.NAME;
@@ -57,10 +57,10 @@ public final class SpecifiersReachabilityQuestion extends Question {
   private static final String PROP_FINAL_NODES_SPECIFIER_INPUT = "finalNodesSpecifierInput";
 
   private static final String PROP_FORBIDDEN_TRANSIT_NODES_NODE_SPECIFIER_INPUT =
-      "forbiddenTransitNodesNodeSpecifierFactory";
+      "forbiddenTransitNodesNodeSpecifierInput";
 
   private static final String PROP_FORBIDDEN_TRANSIT_NODES_NODE_SPECIFIER_FACTORY =
-      "forbiddenTransitNodesNodeSpecifierInput";
+      "forbiddenTransitNodesNodeSpecifierFactory";
 
   private static final String PROP_SOURCE_IP_SPACE_SPECIFIER_FACTORY =
       "sourceIpSpaceSpecifierFactory";

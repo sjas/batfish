@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Ordering;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.SortedSet;
+import java.util.Iterator;
 import org.batfish.datamodel.HeaderSpace;
 import org.batfish.datamodel.Ip;
 import org.batfish.datamodel.IpSpace;
@@ -28,13 +28,24 @@ public final class AclLineMatchExprs {
             .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder())));
   }
 
-  public static AclLineMatchExpr and(SortedSet<AclLineMatchExpr> exprs) {
-    if (exprs.isEmpty()) {
+  /**
+   * Constant-time constructor for AndMatchExpr. Simplifies if given zero or one conjunct. Doesn't
+   * do other simplifications that require more work (like removing all {@link TrueExpr TrueExprs}).
+   */
+  public static AclLineMatchExpr and(Iterable<AclLineMatchExpr> exprs) {
+    Iterator<AclLineMatchExpr> iter = exprs.iterator();
+
+    if (!iter.hasNext()) {
+      // Empty. Return the identity element
       return TrueExpr.INSTANCE;
     }
-    if (exprs.size() == 1) {
-      return exprs.first();
+
+    AclLineMatchExpr first = iter.next();
+    if (!iter.hasNext()) {
+      // Only 1 element
+      return first;
     }
+
     return new AndMatchExpr(exprs);
   }
 
@@ -71,12 +82,20 @@ public final class AclLineMatchExprs {
         Arrays.stream(exprs).collect(ImmutableSortedSet.toImmutableSortedSet(Ordering.natural())));
   }
 
-  public static AclLineMatchExpr or(SortedSet<AclLineMatchExpr> exprs) {
-    if (exprs.isEmpty()) {
+  /**
+   * Constant-time constructor for OrMatchExpr. Simplifies if given zero or one conjunct. Doesn't do
+   * other simplifications that require more work (like removing all {@link FalseExpr FalseExprs}).
+   */
+  public static AclLineMatchExpr or(Iterable<AclLineMatchExpr> exprs) {
+    Iterator<AclLineMatchExpr> iter = exprs.iterator();
+    if (!iter.hasNext()) {
+      // Empty. Return the identity element.
       return FalseExpr.INSTANCE;
     }
-    if (exprs.size() == 1) {
-      return exprs.first();
+    AclLineMatchExpr first = iter.next();
+    if (!iter.hasNext()) {
+      // Only 1 element
+      return first;
     }
     return new OrMatchExpr(exprs);
   }

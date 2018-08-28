@@ -265,6 +265,7 @@ import org.batfish.datamodel.DiffieHellmanGroup;
 import org.batfish.datamodel.DscpType;
 import org.batfish.datamodel.EmptyIpSpace;
 import org.batfish.datamodel.EncryptionAlgorithm;
+import org.batfish.datamodel.FlowState;
 import org.batfish.datamodel.IcmpCode;
 import org.batfish.datamodel.IcmpType;
 import org.batfish.datamodel.IkeAuthenticationMethod;
@@ -297,11 +298,11 @@ import org.batfish.datamodel.RoutingProtocol;
 import org.batfish.datamodel.SnmpCommunity;
 import org.batfish.datamodel.SnmpHost;
 import org.batfish.datamodel.SnmpServer;
-import org.batfish.datamodel.State;
 import org.batfish.datamodel.SubRange;
 import org.batfish.datamodel.SwitchportEncapsulationType;
 import org.batfish.datamodel.SwitchportMode;
 import org.batfish.datamodel.TcpFlags;
+import org.batfish.datamodel.TcpFlagsMatchConditions;
 import org.batfish.datamodel.eigrp.EigrpMetric;
 import org.batfish.datamodel.eigrp.EigrpProcessMode;
 import org.batfish.datamodel.isis.IsisInterfaceMode;
@@ -4246,8 +4247,8 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
       DynamicIpBgpPeerGroup pg = proc.addDynamicIpPeerGroup(prefix);
       pg.setGroupName(name);
       pg.setGroupNameLine(line);
-      if (ctx.as != null) {
-        long remoteAs = toLong(ctx.as);
+      if (ctx.bgp_asn() != null) {
+        long remoteAs = toAsNum(ctx.bgp_asn());
         pg.setRemoteAs(remoteAs);
       }
     } else if (ctx.IPV6_PREFIX() != null) {
@@ -4255,8 +4256,8 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
       DynamicIpv6BgpPeerGroup pg = proc.addDynamicIpv6PeerGroup(prefix6);
       pg.setGroupName(name);
       pg.setGroupNameLine(line);
-      if (ctx.as != null) {
-        long remoteAs = toLong(ctx.as);
+      if (ctx.bgp_asn() != null) {
+        long remoteAs = toAsNum(ctx.bgp_asn());
         pg.setRemoteAs(remoteAs);
       }
     }
@@ -4713,7 +4714,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
   private void exitEigrpProcess(ParserRuleContext ctx) {
     // In process context
     if (_currentEigrpProcess == null) {
-      _w.todo(ctx, getFullText(ctx), _parser, "No eigrp process available");
+      _w.addWarning(ctx, getFullText(ctx), _parser, "No eigrp process available");
       return;
     }
     EigrpProcess proc = _currentEigrpProcess;
@@ -4726,7 +4727,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
        * The result should be a process with ASN 1, but instead the result is an invalid EIGRP
        * process with null ASN.
        */
-      _w.todo(ctx, getFullText(ctx), _parser, "No eigrp ASN configured");
+      _w.addWarning(ctx, getFullText(ctx), _parser, "No eigrp ASN configured");
       return;
     }
     proc.computeNetworks(_configuration.getInterfaces().values());
@@ -4801,26 +4802,28 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
           ctx.alps_dst != null ? toPortRanges(ctx.alps_dst) : Collections.emptyList();
       Integer icmpType = null;
       Integer icmpCode = null;
-      List<TcpFlags> tcpFlags = new ArrayList<>();
+      List<TcpFlagsMatchConditions> tcpFlags = new ArrayList<>();
       Set<Integer> dscps = new TreeSet<>();
       Set<Integer> ecns = new TreeSet<>();
-      Set<State> states = EnumSet.noneOf(State.class);
+      Set<FlowState> states = EnumSet.noneOf(FlowState.class);
       for (Extended_access_list_additional_featureContext feature : ctx.features) {
         if (feature.ACK() != null) {
-          TcpFlags alt = new TcpFlags();
-          alt.setUseAck(true);
-          alt.setAck(true);
-          tcpFlags.add(alt);
+          tcpFlags.add(
+              TcpFlagsMatchConditions.builder()
+                  .setTcpFlags(TcpFlags.builder().setAck(true).build())
+                  .setUseAck(true)
+                  .build());
         }
         if (feature.DSCP() != null) {
           int dscpType = toDscpType(feature.dscp_type());
           dscps.add(dscpType);
         }
         if (feature.ECE() != null) {
-          TcpFlags alt = new TcpFlags();
-          alt.setUseEce(true);
-          alt.setEce(true);
-          tcpFlags.add(alt);
+          tcpFlags.add(
+              TcpFlagsMatchConditions.builder()
+                  .setTcpFlags(TcpFlags.builder().setEce(true).build())
+                  .setUseEce(true)
+                  .build());
         }
         if (feature.ECHO_REPLY() != null) {
           icmpType = IcmpType.ECHO_REPLY;
@@ -4836,23 +4839,27 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
         }
         if (feature.ESTABLISHED() != null) {
           // must contain ACK or RST
-          TcpFlags alt1 = new TcpFlags();
-          TcpFlags alt2 = new TcpFlags();
-          alt1.setUseAck(true);
-          alt1.setAck(true);
-          alt2.setUseRst(true);
-          alt2.setRst(true);
-          tcpFlags.add(alt1);
-          tcpFlags.add(alt2);
+          tcpFlags.add(
+              TcpFlagsMatchConditions.builder()
+                  .setTcpFlags(TcpFlags.builder().setAck(true).build())
+                  .setUseAck(true)
+                  .build());
+          tcpFlags.add(
+              TcpFlagsMatchConditions.builder()
+                  .setTcpFlags(TcpFlags.builder().setRst(true).build())
+                  .setUseRst(true)
+                  .build());
         }
         if (feature.FIN() != null) {
-          TcpFlags alt = new TcpFlags();
-          alt.setUseFin(true);
-          alt.setFin(true);
-          tcpFlags.add(alt);
+          tcpFlags.add(
+              TcpFlagsMatchConditions.builder()
+                  .setTcpFlags(TcpFlags.builder().setFin(true).build())
+                  .setUseFin(true)
+                  .build());
         }
         if (feature.FRAGMENTS() != null) {
-          _w.todo(ctx, getFullText(ctx), _parser, "matching fragments in extended access list");
+          _w.addWarning(
+              ctx, getFullText(ctx), _parser, "matching fragments in extended access list");
           return UnimplementedAccessListServiceSpecifier.INSTANCE;
         }
         if (feature.HOST_UNKNOWN() != null) {
@@ -4883,35 +4890,38 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
           icmpCode = IcmpCode.DESTINATION_PORT_UNREACHABLE;
         }
         if (feature.PSH() != null) {
-          TcpFlags alt = new TcpFlags();
-          alt.setUsePsh(true);
-          alt.setPsh(true);
-          tcpFlags.add(alt);
+          tcpFlags.add(
+              TcpFlagsMatchConditions.builder()
+                  .setTcpFlags(TcpFlags.builder().setPsh(true).build())
+                  .setUsePsh(true)
+                  .build());
         }
         if (feature.REDIRECT() != null) {
           icmpType = IcmpType.REDIRECT_MESSAGE;
         }
         if (feature.RST() != null) {
-          TcpFlags alt = new TcpFlags();
-          alt.setUseRst(true);
-          alt.setRst(true);
-          tcpFlags.add(alt);
+          tcpFlags.add(
+              TcpFlagsMatchConditions.builder()
+                  .setTcpFlags(TcpFlags.builder().setRst(true).build())
+                  .setUseRst(true)
+                  .build());
         }
         if (feature.SOURCE_QUENCH() != null) {
           icmpType = IcmpType.SOURCE_QUENCH;
           icmpCode = IcmpCode.SOURCE_QUENCH;
         }
         if (feature.SYN() != null) {
-          TcpFlags alt = new TcpFlags();
-          alt.setUseSyn(true);
-          alt.setSyn(true);
-          tcpFlags.add(alt);
+          tcpFlags.add(
+              TcpFlagsMatchConditions.builder()
+                  .setTcpFlags(TcpFlags.builder().setSyn(true).build())
+                  .setUseSyn(true)
+                  .build());
         }
         if (feature.TIME_EXCEEDED() != null) {
           icmpType = IcmpType.TIME_EXCEEDED;
         }
         if (feature.TTL() != null) {
-          _w.todo(ctx, getFullText(ctx), _parser, "matching ttl in extended access list");
+          _w.addWarning(ctx, getFullText(ctx), _parser, "matching ttl in extended access list");
           return UnimplementedAccessListServiceSpecifier.INSTANCE;
         }
         if (feature.TTL_EXCEEDED() != null) {
@@ -4923,16 +4933,17 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
           icmpCode = IcmpCode.TRACEROUTE;
         }
         if (feature.TRACKED() != null) {
-          states.add(State.ESTABLISHED);
+          states.add(FlowState.ESTABLISHED);
         }
         if (feature.UNREACHABLE() != null) {
           icmpType = IcmpType.DESTINATION_UNREACHABLE;
         }
         if (feature.URG() != null) {
-          TcpFlags alt = new TcpFlags();
-          alt.setUseUrg(true);
-          alt.setUrg(true);
-          tcpFlags.add(alt);
+          tcpFlags.add(
+              TcpFlagsMatchConditions.builder()
+                  .setTcpFlags(TcpFlags.builder().setUrg(true).build())
+                  .setUseUrg(true)
+                  .build());
         }
       }
       return SimpleExtendedAccessListServiceSpecifier.builder()
@@ -5020,26 +5031,28 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
         ctx.alps_dst != null ? toPortRanges(ctx.alps_dst) : Collections.emptyList();
     Integer icmpType = null;
     Integer icmpCode = null;
-    List<TcpFlags> tcpFlags = new ArrayList<>();
+    List<TcpFlagsMatchConditions> tcpFlags = new ArrayList<>();
     Set<Integer> dscps = new TreeSet<>();
     Set<Integer> ecns = new TreeSet<>();
-    Set<State> states = EnumSet.noneOf(State.class);
+    Set<FlowState> states = EnumSet.noneOf(FlowState.class);
     for (Extended_access_list_additional_featureContext feature : ctx.features) {
       if (feature.ACK() != null) {
-        TcpFlags alt = new TcpFlags();
-        alt.setUseAck(true);
-        alt.setAck(true);
-        tcpFlags.add(alt);
+        tcpFlags.add(
+            TcpFlagsMatchConditions.builder()
+                .setTcpFlags(TcpFlags.builder().setAck(true).build())
+                .setUseAck(true)
+                .build());
       }
       if (feature.DSCP() != null) {
         int dscpType = toDscpType(feature.dscp_type());
         dscps.add(dscpType);
       }
       if (feature.ECE() != null) {
-        TcpFlags alt = new TcpFlags();
-        alt.setUseEce(true);
-        alt.setEce(true);
-        tcpFlags.add(alt);
+        tcpFlags.add(
+            TcpFlagsMatchConditions.builder()
+                .setTcpFlags(TcpFlags.builder().setEce(true).build())
+                .setUseEce(true)
+                .build());
       }
       if (feature.ECHO_REPLY() != null) {
         icmpType = IcmpType.ECHO_REPLY;
@@ -5055,20 +5068,23 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
       }
       if (feature.ESTABLISHED() != null) {
         // must contain ACK or RST
-        TcpFlags alt1 = new TcpFlags();
-        TcpFlags alt2 = new TcpFlags();
-        alt1.setUseAck(true);
-        alt1.setAck(true);
-        alt2.setUseRst(true);
-        alt2.setRst(true);
-        tcpFlags.add(alt1);
-        tcpFlags.add(alt2);
+        tcpFlags.add(
+            TcpFlagsMatchConditions.builder()
+                .setTcpFlags(TcpFlags.builder().setAck(true).build())
+                .setUseAck(true)
+                .build());
+        tcpFlags.add(
+            TcpFlagsMatchConditions.builder()
+                .setTcpFlags(TcpFlags.builder().setRst(true).build())
+                .setUseRst(true)
+                .build());
       }
       if (feature.FIN() != null) {
-        TcpFlags alt = new TcpFlags();
-        alt.setUseFin(true);
-        alt.setFin(true);
-        tcpFlags.add(alt);
+        tcpFlags.add(
+            TcpFlagsMatchConditions.builder()
+                .setTcpFlags(TcpFlags.builder().setFin(true).build())
+                .setUseFin(true)
+                .build());
       }
       if (feature.FRAGMENTS() != null) {
         todo(ctx);
@@ -5101,29 +5117,32 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
         icmpCode = IcmpCode.DESTINATION_PORT_UNREACHABLE;
       }
       if (feature.PSH() != null) {
-        TcpFlags alt = new TcpFlags();
-        alt.setUsePsh(true);
-        alt.setPsh(true);
-        tcpFlags.add(alt);
+        tcpFlags.add(
+            TcpFlagsMatchConditions.builder()
+                .setTcpFlags(TcpFlags.builder().setPsh(true).build())
+                .setUsePsh(true)
+                .build());
       }
       if (feature.REDIRECT() != null) {
         icmpType = IcmpType.REDIRECT_MESSAGE;
       }
       if (feature.RST() != null) {
-        TcpFlags alt = new TcpFlags();
-        alt.setUseRst(true);
-        alt.setRst(true);
-        tcpFlags.add(alt);
+        tcpFlags.add(
+            TcpFlagsMatchConditions.builder()
+                .setTcpFlags(TcpFlags.builder().setRst(true).build())
+                .setUseRst(true)
+                .build());
       }
       if (feature.SOURCE_QUENCH() != null) {
         icmpType = IcmpType.SOURCE_QUENCH;
         icmpCode = IcmpCode.SOURCE_QUENCH;
       }
       if (feature.SYN() != null) {
-        TcpFlags alt = new TcpFlags();
-        alt.setUseSyn(true);
-        alt.setSyn(true);
-        tcpFlags.add(alt);
+        tcpFlags.add(
+            TcpFlagsMatchConditions.builder()
+                .setTcpFlags(TcpFlags.builder().setSyn(true).build())
+                .setUseSyn(true)
+                .build());
       }
       if (feature.TIME_EXCEEDED() != null) {
         icmpType = IcmpType.TIME_EXCEEDED;
@@ -5140,16 +5159,17 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
         icmpCode = IcmpCode.TRACEROUTE;
       }
       if (feature.TRACKED() != null) {
-        states.add(State.ESTABLISHED);
+        states.add(FlowState.ESTABLISHED);
       }
       if (feature.UNREACHABLE() != null) {
         icmpType = IcmpType.DESTINATION_UNREACHABLE;
       }
       if (feature.URG() != null) {
-        TcpFlags alt = new TcpFlags();
-        alt.setUseUrg(true);
-        alt.setUrg(true);
-        tcpFlags.add(alt);
+        tcpFlags.add(
+            TcpFlagsMatchConditions.builder()
+                .setTcpFlags(TcpFlags.builder().setUrg(true).build())
+                .setUseUrg(true)
+                .build());
       }
     }
     String name = getFullText(ctx).trim();
@@ -5564,7 +5584,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
     if (ifaces.containsKey(alias)) {
       _w.redFlag(String.format("Interface alias '%s' is already in use.", alias));
     } else if (_currentInterfaces.size() > 1) {
-      _w.redFlag(String.format("Parse assertion failed for _currentInterfaces"));
+      _w.redFlag("Parse assertion failed for _currentInterfaces");
     } else {
       // Define the alias as an interface to make ref tracking easier
       defineStructure(INTERFACE, alias, ctx);
@@ -6250,7 +6270,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
 
   @Override
   public void exitLocal_as_bgp_tail(Local_as_bgp_tailContext ctx) {
-    long as = toLong(ctx.as);
+    long as = toAsNum(ctx.bgp_asn());
     _currentPeerGroup.setLocalAs(as);
   }
 
@@ -6592,7 +6612,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
   public void exitRe_autonomous_system(Re_autonomous_systemContext ctx) {
     // In process context
     if (_currentEigrpProcess == null) {
-      _w.todo(ctx, getFullText(ctx), _parser, "No eigrp process available");
+      _w.addWarning(ctx, getFullText(ctx), _parser, "No eigrp process available");
       return;
     }
 
@@ -6604,7 +6624,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
   public void exitRe_default_metric(Re_default_metricContext ctx) {
     // In process context
     if (_currentEigrpProcess == null) {
-      _w.todo(ctx, getFullText(ctx), _parser, "No eigrp process available");
+      _w.addWarning(ctx, getFullText(ctx), _parser, "No eigrp process available");
       return;
     }
     if (ctx.NO() == null) {
@@ -6620,7 +6640,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
   public void exitRe_eigrp_router_id(Re_eigrp_router_idContext ctx) {
     // In process context
     if (_currentEigrpProcess == null) {
-      _w.todo(ctx, getFullText(ctx), _parser, "No eigrp process available");
+      _w.addWarning(ctx, getFullText(ctx), _parser, "No eigrp process available");
       return;
     }
     if (ctx.NO() == null) {
@@ -6643,7 +6663,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
   public void exitRe_passive_interface(Re_passive_interfaceContext ctx) {
     // In process context
     if (_currentEigrpProcess == null) {
-      _w.todo(ctx, getFullText(ctx), _parser, "No eigrp process available");
+      _w.addWarning(ctx, getFullText(ctx), _parser, "No eigrp process available");
       return;
     }
     boolean passive = (ctx.NO() == null);
@@ -6655,7 +6675,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
   public void exitRe_passive_interface_default(Re_passive_interface_defaultContext ctx) {
     // In process context
     if (_currentEigrpProcess == null) {
-      _w.todo(ctx, getFullText(ctx), _parser, "No eigrp process available");
+      _w.addWarning(ctx, getFullText(ctx), _parser, "No eigrp process available");
       return;
     }
     boolean passive = (ctx.NO() == null);
@@ -6666,7 +6686,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
   public void exitRe_redistribute_bgp(Re_redistribute_bgpContext ctx) {
     // In process context
     if (_currentEigrpProcess == null) {
-      _w.todo(ctx, getFullText(ctx), _parser, "No eigrp process available");
+      _w.addWarning(ctx, getFullText(ctx), _parser, "No eigrp process available");
       return;
     }
     RoutingProtocol sourceProtocol = RoutingProtocol.BGP;
@@ -6694,7 +6714,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
   public void exitRe_redistribute_connected(Re_redistribute_connectedContext ctx) {
     // In process context
     if (_currentEigrpProcess == null) {
-      _w.todo(ctx, getFullText(ctx), _parser, "No eigrp process available");
+      _w.addWarning(ctx, getFullText(ctx), _parser, "No eigrp process available");
       return;
     }
     RoutingProtocol sourceProtocol = RoutingProtocol.CONNECTED;
@@ -6721,7 +6741,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
   public void exitRe_redistribute_eigrp(Re_redistribute_eigrpContext ctx) {
     // In process context
     if (_currentEigrpProcess == null) {
-      _w.todo(ctx, getFullText(ctx), _parser, "No eigrp process available");
+      _w.addWarning(ctx, getFullText(ctx), _parser, "No eigrp process available");
       return;
     }
     RoutingProtocol sourceProtocol = RoutingProtocol.EIGRP;
@@ -6752,14 +6772,14 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
       _configuration.referenceStructure(
           ROUTE_MAP, mapname, EIGRP_REDISTRIBUTE_ISIS_MAP, ctx.map.getStart().getLine());
     }
-    _w.todo(ctx, getFullText(ctx), _parser, "ISIS redistirution in EIGRP is not implemented");
+    _w.addWarning(ctx, getFullText(ctx), _parser, "ISIS redistirution in EIGRP is not implemented");
   }
 
   @Override
   public void exitRe_redistribute_ospf(Re_redistribute_ospfContext ctx) {
     // In process context
     if (_currentEigrpProcess == null) {
-      _w.todo(ctx, getFullText(ctx), _parser, "No eigrp process available");
+      _w.addWarning(ctx, getFullText(ctx), _parser, "No eigrp process available");
       return;
     }
     RoutingProtocol sourceProtocol = RoutingProtocol.OSPF;
@@ -6791,7 +6811,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
   public void exitRe_redistribute_rip(Re_redistribute_ripContext ctx) {
     // In process context
     if (_currentEigrpProcess == null) {
-      _w.todo(ctx, getFullText(ctx), _parser, "No eigrp process available");
+      _w.addWarning(ctx, getFullText(ctx), _parser, "No eigrp process available");
       return;
     }
     RoutingProtocol sourceProtocol = RoutingProtocol.RIP;
@@ -6817,7 +6837,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
   public void exitRe_redistribute_static(Re_redistribute_staticContext ctx) {
     // In process context
     if (_currentEigrpProcess == null) {
-      _w.todo(ctx, getFullText(ctx), _parser, "No eigrp process available");
+      _w.addWarning(ctx, getFullText(ctx), _parser, "No eigrp process available");
       return;
     }
     RoutingProtocol sourceProtocol = RoutingProtocol.STATIC;
@@ -6848,12 +6868,12 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
   public void exitReafi_passive_interface(Reafi_passive_interfaceContext ctx) {
     // In process context
     if (_currentEigrpProcess == null) {
-      _w.todo(ctx, getFullText(ctx), _parser, "No eigrp process available");
+      _w.addWarning(ctx, getFullText(ctx), _parser, "No eigrp process available");
       return;
     }
     // In interface context
     if (_currentEigrpInterface == null) {
-      _w.todo(ctx, getFullText(ctx), _parser, "No eigrp interface available");
+      _w.addWarning(ctx, getFullText(ctx), _parser, "No eigrp interface available");
       return;
     }
 
@@ -7507,7 +7527,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
   @Override
   public void exitRemote_as_bgp_tail(Remote_as_bgp_tailContext ctx) {
     BgpProcess proc = currentVrf().getBgpProcess();
-    long as = toLong(ctx.as);
+    long as = toAsNum(ctx.bgp_asn());
     if (_currentPeerGroup != proc.getMasterBgpPeerGroup()) {
       _currentPeerGroup.setRemoteAs(as);
     } else {
@@ -7702,7 +7722,7 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
     RoutingProtocol sourceProtocol = RoutingProtocol.BGP;
     OspfRedistributionPolicy r = new OspfRedistributionPolicy(sourceProtocol);
     proc.getRedistributionPolicies().put(sourceProtocol, r);
-    int as = toInteger(ctx.as);
+    long as = toAsNum(ctx.bgp_asn());
     r.getSpecialAttributes().put(OspfRedistributionPolicy.BGP_AS, as);
     if (ctx.metric != null) {
       int metric = toInteger(ctx.metric);
@@ -9804,14 +9824,14 @@ public class CiscoControlPlaneExtractor extends CiscoParserBaseListener
 
   private OriginExpr toOriginExpr(Origin_expr_literalContext ctx) {
     OriginType originType;
-    Integer asNum = null;
+    Long asNum = null;
     LiteralOrigin originExpr;
     if (ctx.IGP() != null) {
       originType = OriginType.IGP;
     } else if (ctx.INCOMPLETE() != null) {
       originType = OriginType.INCOMPLETE;
-    } else if (ctx.as != null) {
-      asNum = toInteger(ctx.as);
+    } else if (ctx.bgp_asn() != null) {
+      asNum = toAsNum(ctx.bgp_asn());
       originType = OriginType.IGP;
     } else {
       throw convError(OriginExpr.class, ctx);
