@@ -37,7 +37,7 @@
         "paths" : {
           "BASE" : [
             {
-              "disposition" : "NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK",
+              "disposition" : "DELIVERED",
               "hops" : [
                 {
                   "edge" : {
@@ -99,7 +99,7 @@
                   }
                 }
               ],
-              "notes" : "NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK"
+              "notes" : "DELIVERED"
             }
           ]
         }
