@@ -1,6 +1,8 @@
 package org.batfish.datamodel.acl.normalize;
 
+import static org.batfish.datamodel.acl.AclLineMatchExprs.and;
 import static org.batfish.datamodel.acl.AclLineMatchExprs.not;
+import static org.batfish.datamodel.acl.AclLineMatchExprs.or;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedSet;
@@ -57,13 +59,13 @@ public final class AclToAclLineMatchExpr
               new Builder<>(Comparator.naturalOrder());
           conjuncts.addAll(rejects);
           conjuncts.add(expr);
-          permitBuilder.add(new AndMatchExpr(conjuncts.build()));
+          permitBuilder.add(and(conjuncts.build()));
         }
       } else {
         rejects.add(not(expr));
       }
     }
-    return new OrMatchExpr(permitBuilder.build());
+    return or(permitBuilder.build());
   }
 
   public static AclLineMatchExpr toAclLineMatchExpr(
@@ -73,7 +75,7 @@ public final class AclToAclLineMatchExpr
 
   @Override
   public AclLineMatchExpr visitAndMatchExpr(AndMatchExpr andMatchExpr) {
-    return new AndMatchExpr(
+    return and(
         andMatchExpr
             .getConjuncts()
             .stream()
@@ -108,7 +110,7 @@ public final class AclToAclLineMatchExpr
 
   @Override
   public AclLineMatchExpr visitOrMatchExpr(OrMatchExpr orMatchExpr) {
-    return new OrMatchExpr(
+    return or(
         orMatchExpr
             .getDisjuncts()
             .stream()
