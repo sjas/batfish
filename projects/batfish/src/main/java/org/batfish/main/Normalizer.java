@@ -1,11 +1,13 @@
-package org.batfish.datamodel.acl.normalize;
+package org.batfish.main;
 
 import static org.batfish.datamodel.acl.normalize.Negate.negate;
 
 import com.google.common.collect.ImmutableSortedSet;
-import java.util.ArrayList;
+import com.google.common.collect.Ordering;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -20,21 +22,25 @@ import org.batfish.datamodel.acl.OrMatchExpr;
 import org.batfish.datamodel.acl.OriginatingFromDevice;
 import org.batfish.datamodel.acl.PermittedByAcl;
 import org.batfish.datamodel.acl.TrueExpr;
+import org.batfish.datamodel.acl.explanation.Conjuncts;
+import org.batfish.symbolic.bdd.AclLineMatchExprToBDD;
 
 /**
  * Normalize {@link AclLineMatchExpr AclLineMatchExprs} to a DNF-style form: a single or at the
  * root, all ands as immediate children of the or.
  */
 public final class Normalizer implements GenericAclLineMatchExprVisitor<AclLineMatchExpr> {
-  private static final Normalizer INSTANCE = new Normalizer();
+  AclLineMatchExprToBDD _aclLineMatchExprToBDD;
 
-  private Normalizer() {}
-
-  public static AclLineMatchExpr normalize(AclLineMatchExpr expr) {
-    return expr.accept(INSTANCE);
+  public Normalizer(AclLineMatchExprToBDD aclLineMatchExprToBDD) {
+    _aclLineMatchExprToBDD = aclLineMatchExprToBDD;
   }
 
-  private static AclLineMatchExpr and(List<AclLineMatchExpr> exprs) {
+  public AclLineMatchExpr normalize(AclLineMatchExpr expr) {
+    return expr.accept(this);
+  }
+
+  private static AclLineMatchExpr and(Set<AclLineMatchExpr> exprs) {
     if (exprs.contains(FalseExpr.INSTANCE)) {
       return FalseExpr.INSTANCE;
     }
@@ -48,7 +54,7 @@ public final class Normalizer implements GenericAclLineMatchExprVisitor<AclLineM
         exprs
             .stream()
             .filter(expr -> expr != TrueExpr.INSTANCE)
-            .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
+            .collect(ImmutableSortedSet.toImmutableSortedSet(Ordering.natural()));
     if (conjuncts.isEmpty()) {
       return TrueExpr.INSTANCE;
     } else if (conjuncts.size() == 1) {
@@ -94,8 +100,8 @@ public final class Normalizer implements GenericAclLineMatchExprVisitor<AclLineM
 
     // Normalize subexpressions, combine all OR subexpressions, and then distribute the AND over
     // the single OR.
-    List<List<AclLineMatchExpr>> orOfAnds = new ArrayList<>();
-    orOfAnds.add(new ArrayList<>());
+    Set<Conjuncts> orOfAnds = new HashSet<>();
+    orOfAnds.add(new Conjuncts(_aclLineMatchExprToBDD));
 
     for (AclLineMatchExpr conjunct : normalizedConjuncts) {
       if (conjunct instanceof OrMatchExpr) {
@@ -104,29 +110,34 @@ public final class Normalizer implements GenericAclLineMatchExprVisitor<AclLineM
          * by normalization happens.
          */
         OrMatchExpr orMatchExpr = (OrMatchExpr) conjunct;
-        List<List<AclLineMatchExpr>> newOrOfAnds = new ArrayList<>();
+        Set<Conjuncts> newOrOfAnds = new HashSet<>();
         for (AclLineMatchExpr disjunct : orMatchExpr.getDisjuncts()) {
-          for (List<AclLineMatchExpr> ands : orOfAnds) {
-            List<AclLineMatchExpr> newAnds = new ArrayList<>(ands);
+          for (Conjuncts conjuncts : orOfAnds) {
+            Conjuncts newConjuncts = new Conjuncts(conjuncts);
             if (disjunct instanceof AndMatchExpr) {
-              newAnds.addAll(((AndMatchExpr) disjunct).getConjuncts());
+              ((AndMatchExpr) disjunct).getConjuncts().forEach(newConjuncts::addConjunct);
             } else {
-              newAnds.add(disjunct);
+              newConjuncts.addConjunct(disjunct);
             }
-            newOrOfAnds.add(newAnds);
+            if (newConjuncts.isSatisfiable()) {
+              newOrOfAnds.add(newConjuncts);
+            } else {
+              System.out.println("hey");
+            }
           }
         }
         orOfAnds = newOrOfAnds;
       } else {
         // add it to each AND
         assert !(conjunct instanceof AndMatchExpr);
-        orOfAnds.forEach(ands -> ands.add(conjunct));
+        orOfAnds.forEach(conjuncts -> conjuncts.addConjunct(conjunct));
       }
     }
 
     return or(
         orOfAnds
             .stream()
+            .map(Conjuncts::getConjuncts)
             .map(Normalizer::and)
             .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder())));
   }
@@ -148,7 +159,12 @@ public final class Normalizer implements GenericAclLineMatchExprVisitor<AclLineM
 
   @Override
   public AclLineMatchExpr visitNotMatchExpr(NotMatchExpr notMatchExpr) {
-    return negate(notMatchExpr.getOperand().accept(this));
+    AclLineMatchExpr negated = negate(notMatchExpr.getOperand());
+    if (negated instanceof NotMatchExpr) {
+      // hit a leaf
+      return negated;
+    }
+    return negated.accept(this);
   }
 
   @Override

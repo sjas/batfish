@@ -18,8 +18,8 @@ public final class IntersectHeaderSpaces {
   public static Optional<HeaderSpace> intersect(HeaderSpace h1, HeaderSpace h2) {
     Preconditions.checkArgument(unconstrained(h1.getSrcOrDstIps()));
     Preconditions.checkArgument(unconstrained(h2.getSrcOrDstIps()));
-    Preconditions.checkArgument(unconstrained(h1.getSrcOrDstPorts()));
-    Preconditions.checkArgument(unconstrained(h2.getSrcOrDstPorts()));
+    //    Preconditions.checkArgument(unconstrained(h1.getSrcOrDstPorts()));
+    //    Preconditions.checkArgument(unconstrained(h2.getSrcOrDstPorts()));
     Preconditions.checkArgument(unconstrained(h1.getSrcOrDstProtocols()));
     Preconditions.checkArgument(unconstrained(h2.getSrcOrDstProtocols()));
 

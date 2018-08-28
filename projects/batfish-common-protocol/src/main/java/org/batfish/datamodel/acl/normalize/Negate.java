@@ -18,7 +18,7 @@ import org.batfish.datamodel.acl.TrueExpr;
 /**
  * Negate an AclLineMatchExpr. Eliminate double-negation and apply deMorgan's law where possible.
  */
-final class Negate implements GenericAclLineMatchExprVisitor<AclLineMatchExpr> {
+public final class Negate implements GenericAclLineMatchExprVisitor<AclLineMatchExpr> {
   private static final Negate INSTANCE = new Negate();
 
   private Negate() {}
@@ -30,7 +30,7 @@ final class Negate implements GenericAclLineMatchExprVisitor<AclLineMatchExpr> {
   public static SortedSet<AclLineMatchExpr> negate(SortedSet<AclLineMatchExpr> exprs) {
     return exprs
         .stream()
-        .map(INSTANCE::visit)
+        .map(NotMatchExpr::new)
         .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
   }
 

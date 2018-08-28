@@ -2,10 +2,12 @@ package org.batfish.z3;
 
 import static org.batfish.datamodel.acl.AclLineMatchExprs.FALSE;
 import static org.batfish.datamodel.acl.AclLineMatchExprs.TRUE;
+import static org.batfish.datamodel.acl.AclLineMatchExprs.and;
+import static org.batfish.datamodel.acl.AclLineMatchExprs.or;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedSet;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -103,20 +105,20 @@ public abstract class IpAccessListSpecializer
 
   @Override
   public final AclLineMatchExpr visitAndMatchExpr(AndMatchExpr andMatchExpr) {
-    List<AclLineMatchExpr> conjuncts =
+    SortedSet<AclLineMatchExpr> conjuncts =
         andMatchExpr
             .getConjuncts()
             .stream()
             .map(expr -> expr.accept(this))
             .filter(expr -> expr != TrueExpr.INSTANCE)
-            .collect(ImmutableList.toImmutableList());
+            .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
     if (conjuncts.isEmpty()) {
       return TrueExpr.INSTANCE;
     }
     if (conjuncts.contains(FalseExpr.INSTANCE)) {
       return FalseExpr.INSTANCE;
     }
-    return new AndMatchExpr(conjuncts);
+    return and(conjuncts);
   }
 
   @Override
@@ -219,7 +221,7 @@ public abstract class IpAccessListSpecializer
     if (disjuncts.contains(TrueExpr.INSTANCE)) {
       return TrueExpr.INSTANCE;
     }
-    return new OrMatchExpr(disjuncts);
+    return or(disjuncts);
   }
 
   @Override
