@@ -18,8 +18,8 @@ public final class IntersectHeaderSpaces {
   public static Optional<HeaderSpace> intersect(HeaderSpace h1, HeaderSpace h2) {
     Preconditions.checkArgument(unconstrained(h1.getSrcOrDstIps()));
     Preconditions.checkArgument(unconstrained(h2.getSrcOrDstIps()));
-    //    Preconditions.checkArgument(unconstrained(h1.getSrcOrDstPorts()));
-    //    Preconditions.checkArgument(unconstrained(h2.getSrcOrDstPorts()));
+    Preconditions.checkArgument(unconstrained(h1.getSrcOrDstPorts()));
+    Preconditions.checkArgument(unconstrained(h2.getSrcOrDstPorts()));
     Preconditions.checkArgument(unconstrained(h1.getSrcOrDstProtocols()));
     Preconditions.checkArgument(unconstrained(h2.getSrcOrDstProtocols()));
 
@@ -33,7 +33,7 @@ public final class IntersectHeaderSpaces {
               .setDscps(intersectSimpleSets(h1.getDscps(), h2.getDscps()))
               // TODO check for non-empty IpSpace intersections, simplify when possible, etc
               .setDstIps(AclIpSpace.intersection(h1.getDstIps(), h2.getDstIps()))
-              .setDstPorts(intersectSubRangeSets(h1.getDstPorts(), h1.getDstPorts()))
+              .setDstPorts(intersectSubRangeSets(h1.getDstPorts(), h2.getDstPorts()))
               .setDstProtocols(intersectSimpleSets(h1.getDstProtocols(), h2.getDstProtocols()))
               // TODO simplify notDstIps
               .setIpProtocols(intersectSimpleSets(h1.getIpProtocols(), h2.getIpProtocols()))
