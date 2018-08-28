@@ -175,11 +175,19 @@ public class AclIpSpace extends IpSpace {
    * {@code null} ipSpaces are ignored. If all arguments are {@code null}, returns {@code null}.
    */
   public static @Nullable IpSpace union(Iterable<IpSpace> ipSpaces) {
-    return unionNonnull(
+    IpSpace[] nonNullSpaces =
         StreamSupport.stream(ipSpaces.spliterator(), false)
             .filter(Objects::nonNull)
+            .toArray(IpSpace[]::new);
+    if (nonNullSpaces.length == 0) {
+      // no constraint
+      return null;
+    }
+    IpSpace[] nonEmptySpaces =
+        Arrays.stream(nonNullSpaces)
             .filter(ipSpace -> ipSpace != EmptyIpSpace.INSTANCE)
-            .toArray(IpSpace[]::new));
+            .toArray(IpSpace[]::new);
+    return nonEmptySpaces.length == 0 ? EmptyIpSpace.INSTANCE : unionNonnull(nonNullSpaces);
   }
 
   private static @Nullable IpSpace unionNonnull(IpSpace... ipSpaces) {
