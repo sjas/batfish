@@ -1,7 +1,7 @@
 package org.batfish.z3;
 
+import static org.batfish.datamodel.FlowDisposition.DELIVERED;
 import static org.batfish.datamodel.FlowDisposition.DENIED_OUT;
-import static org.batfish.datamodel.FlowDisposition.NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK;
 import static org.batfish.datamodel.matchers.EdgeMatchers.hasInt2;
 import static org.batfish.datamodel.matchers.FlowTraceHopMatchers.hasEdge;
 import static org.batfish.datamodel.matchers.FlowTraceMatchers.hasDisposition;
@@ -160,7 +160,7 @@ public class NodJobAclTest {
         ImmutableMap.of(ingressLocation, TrueExpr.INSTANCE);
     StandardReachabilityQuerySynthesizer querySynthesizer =
         StandardReachabilityQuerySynthesizer.builder()
-            .setActions(ImmutableSet.of(ForwardingAction.NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK))
+            .setActions(ImmutableSet.of(ForwardingAction.DELIVERED))
             .setFinalNodes(ImmutableSet.of(dstNode.getHostname()))
             .setHeaderSpace(headerSpace)
             .setSrcIpConstraints(srcIpConstraints)
@@ -196,12 +196,10 @@ public class NodJobAclTest {
         containsInAnyOrder(
             ImmutableList.of(
                 /* One trace should enter dstNode through iface1 and then pass the outgoing filter,
-                 * resulting in the NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK disposition.
+                 * resulting in the DELIVERED disposition.
                  * Specifically, the first hop should have an edge with int2=iface1.
                  */
-                allOf(
-                    hasDisposition(NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK),
-                    hasHop(0, hasEdge(hasInt2(iface1)))),
+                allOf(hasDisposition(DELIVERED), hasHop(0, hasEdge(hasInt2(iface1)))),
                 /* One trace should enter dstNode through iface2 and then be dropped by the outgoing
                  * filter, resulting in the DENIED_OUT disposition. The first hop should have an
                  * edge with int2=iface2.
@@ -299,7 +297,7 @@ public class NodJobAclTest {
 
     StandardReachabilityQuerySynthesizer querySynthesizer =
         StandardReachabilityQuerySynthesizer.builder()
-            .setActions(ImmutableSet.of(ForwardingAction.NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK))
+            .setActions(ImmutableSet.of(ForwardingAction.DELIVERED))
             .setFinalNodes(ImmutableSet.of(node.getHostname()))
             .setHeaderSpace(headerSpace)
             .setSrcIpConstraints(srcIpConstraints)
@@ -336,11 +334,9 @@ public class NodJobAclTest {
         flowTraces,
         contains(
             /* The trace should originate at iface1 and then pass the outgoing filter,
-             * resulting in the NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK disposition.
+             * resulting in the DELIVERED disposition.
              */
-            allOf(
-                hasDisposition(NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK),
-                hasHop(0, hasEdge(hasInt2(iface1))))));
+            allOf(hasDisposition(DELIVERED), hasHop(0, hasEdge(hasInt2(iface1))))));
   }
 
   @Test
@@ -431,7 +427,7 @@ public class NodJobAclTest {
         ImmutableMap.of(ingressLocation, TrueExpr.INSTANCE);
     StandardReachabilityQuerySynthesizer querySynthesizer =
         StandardReachabilityQuerySynthesizer.builder()
-            .setActions(ImmutableSet.of(ForwardingAction.NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK))
+            .setActions(ImmutableSet.of(ForwardingAction.DELIVERED))
             .setHeaderSpace(headerSpace)
             .setSrcIpConstraints(srcIpConstraints)
             .build();

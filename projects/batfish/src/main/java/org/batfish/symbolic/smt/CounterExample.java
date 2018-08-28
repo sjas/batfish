@@ -353,11 +353,7 @@ class CounterExample {
               FlowTrace ft = new FlowTrace(FlowDisposition.ACCEPTED, hops, "ACCEPTED");
               return new Tuple<>(f, ft);
             } else {
-              FlowTrace ft =
-                  new FlowTrace(
-                      FlowDisposition.NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK,
-                      hops,
-                      "NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK");
+              FlowTrace ft = new FlowTrace(FlowDisposition.DELIVERED, hops, "DELIVERED");
               return new Tuple<>(f, ft);
             }
           }
@@ -393,11 +389,7 @@ class CounterExample {
               return new Tuple<>(f, ft);
             }
           }
-          FlowTrace ft =
-              new FlowTrace(
-                  FlowDisposition.NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK,
-                  hops,
-                  "NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK");
+          FlowTrace ft = new FlowTrace(FlowDisposition.DELIVERED, hops, "DELIVERED");
           return new Tuple<>(f, ft);
         }
         FlowTrace ft = new FlowTrace(FlowDisposition.NO_ROUTE, hops, "NO_ROUTE");

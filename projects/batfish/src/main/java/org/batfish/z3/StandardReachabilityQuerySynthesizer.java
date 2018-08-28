@@ -193,7 +193,7 @@ public class StandardReachabilityQuerySynthesizer extends ReachabilityQuerySynth
           }
           break;
 
-        case NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK:
+        case DELIVERED:
           if (!_finalNodes.isEmpty()) {
             for (String finalNode : _finalNodes) {
               StateExpr drop = new NodeNeighborUnreachable(finalNode);

@@ -261,7 +261,7 @@ public class TracerouteAnswererTest {
                 everyItem(hasDisposition(FlowDisposition.DENIED_OUT)),
                 Schema.set(Schema.FLOW_TRACE))));
 
-    // with ignoreAcls we get NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK
+    // with ignoreAcls we get DELIVERED
     question.setIgnoreAcls(true);
     answer = (TableAnswerElement) answerer.answer();
     assertThat(answer.getRows().getData(), hasSize(1));
@@ -270,7 +270,7 @@ public class TracerouteAnswererTest {
         everyItem(
             hasColumn(
                 "traces",
-                everyItem(hasDisposition(FlowDisposition.NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK)),
+                everyItem(hasDisposition(FlowDisposition.DELIVERED)),
                 Schema.set(Schema.FLOW_TRACE))));
   }
 }

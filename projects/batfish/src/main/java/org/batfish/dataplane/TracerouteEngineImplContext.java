@@ -359,9 +359,7 @@ class TracerouteEngineImplContext {
             hopsSoFar.add(neighborUnreachableHop);
             FlowTrace trace =
                 new FlowTrace(
-                    FlowDisposition.NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK,
-                    hopsSoFar,
-                    FlowDisposition.NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK.toString());
+                    FlowDisposition.DELIVERED, hopsSoFar, FlowDisposition.DELIVERED.toString());
             flowTraces.add(trace);
           }
         }
@@ -454,10 +452,7 @@ class TracerouteEngineImplContext {
             .add(neighborUnreachableHop)
             .build();
     FlowTrace trace =
-        new FlowTrace(
-            FlowDisposition.NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK,
-            newHops,
-            FlowDisposition.NEIGHBOR_UNREACHABLE_OR_EXITS_NETWORK.toString());
+        new FlowTrace(FlowDisposition.DELIVERED, newHops, FlowDisposition.DELIVERED.toString());
     return trace;
   }
 
