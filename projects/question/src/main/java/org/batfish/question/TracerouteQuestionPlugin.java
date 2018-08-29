@@ -209,7 +209,7 @@ public class TracerouteQuestionPlugin extends QuestionPlugin {
 
     @Override
     public String getName() {
-      return "traceroute";
+      return "oldtraceroute";
     }
 
     @Override

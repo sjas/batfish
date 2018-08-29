@@ -90,7 +90,7 @@ public final class TracerouteQuestion extends IPacketTraceQuestion {
 
   @Override
   public String getName() {
-    return "traceroute2";
+    return "traceroute";
   }
 
   @Override
