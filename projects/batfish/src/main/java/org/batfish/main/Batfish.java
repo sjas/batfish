@@ -1,9 +1,9 @@
 package org.batfish.main;
 
 import static java.util.stream.Collectors.toMap;
+import static org.batfish.common.util.CommonUtil.toImmutableMap;
 import static org.batfish.common.util.CommonUtil.toImmutableSortedMap;
 import static org.batfish.datamodel.acl.SourcesReferencedByIpAccessLists.referencedSources;
-import static org.batfish.datamodel.acl.normalize.Normalizer.normalize;
 import static org.batfish.main.ReachabilityParametersResolver.resolveReachabilityParameters;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -129,7 +129,9 @@ import org.batfish.datamodel.SwitchportMode;
 import org.batfish.datamodel.Topology;
 import org.batfish.datamodel.Vrf;
 import org.batfish.datamodel.acl.AclLineMatchExpr;
+import org.batfish.datamodel.acl.AclLineMatchExprs;
 import org.batfish.datamodel.acl.AndMatchExpr;
+import org.batfish.datamodel.acl.FalseExpr;
 import org.batfish.datamodel.acl.OrMatchExpr;
 import org.batfish.datamodel.acl.PermittedByAcl;
 import org.batfish.datamodel.acl.TypeMatchExprsCollector;
@@ -4365,27 +4367,86 @@ public class Batfish extends PluginConsumer implements IBatfish {
 
     BDDSourceManager mgr =
         BDDSourceManager.forSources(bddPacket, activeInterfaces, referencedSources);
-    BDD baseAclBDD =
+    BDDAcl baseBDDAcl =
         BDDAcl.create(
-                bddPacket, baseAcl, baseConfig.getIpAccessLists(), baseConfig.getIpSpaces(), mgr)
-            .getBdd()
-            .and(headerSpaceBDD)
-            .and(mgr.isSane());
-    BDD deltaAclBDD =
+            bddPacket, baseAcl, baseConfig.getIpAccessLists(), baseConfig.getIpSpaces(), mgr);
+    BDD baseAclBDD = baseBDDAcl.getBdd();
+    BDDAcl deltaBDDAcl =
         BDDAcl.create(
-                bddPacket, deltaAcl, deltaConfig.getIpAccessLists(), deltaConfig.getIpSpaces(), mgr)
-            .getBdd()
-            .and(headerSpaceBDD)
-            .and(mgr.isSane());
+            bddPacket, deltaAcl, deltaConfig.getIpAccessLists(), deltaConfig.getIpSpaces(), mgr);
+    BDD deltaAclBDD = deltaBDDAcl.getBdd();
 
     String hostname = baseConfig.getHostname();
 
-    BDD increasedBDD = baseAclBDD.not().and(deltaAclBDD);
+    BDD increasedBDD = baseAclBDD.not().and(deltaAclBDD).and(headerSpaceBDD).and(mgr.isSane());
     Flow increasedFlow = getFlow(bddPacket, mgr, hostname, increasedBDD).orElse(null);
+
+    // explanation without specialization.
+    if (!increasedBDD.isZero()) {
+      AclLineMatchExpr deltaAclExpr =
+          AclToAclLineMatchExpr.toAclLineMatchExpr(deltaAcl, deltaConfig.getIpAccessLists());
+      AclLineMatchExpr baseAclExpr =
+          AclToAclLineMatchExpr.toAclLineMatchExpr(baseAcl, baseConfig.getIpAccessLists());
+      AclLineMatchExpr increasedAclExpr =
+          AclLineMatchExprs.and(deltaAclExpr, AclLineMatchExprs.not(baseAclExpr));
+
+      try {
+        // TODO be robust to changes in IpSpace definitions
+        BDD bdd1 = increasedAclExpr.accept(deltaBDDAcl.getAclLineMatchExprToBDD());
+        /* TODO Bug in specialization! */
+        BDDIpAccessListSpecializer specializer =
+            new BDDIpAccessListSpecializer(
+                bddPacket, increasedBDD, deltaConfig.getIpSpaces(), mgr, false);
+        AclLineMatchExpr specializedExpr = specializer.visit(increasedAclExpr);
+        BDD bdd2 = specializedExpr.accept(deltaBDDAcl.getAclLineMatchExprToBDD());
+        // */
+
+        /* only specialize to the headerspace
+        BDDIpAccessListSpecializer specializer =
+            new BDDIpAccessListSpecializer(
+                bddPacket, headerSpaceBDD.and(mgr.isSane()), deltaConfig.getIpSpaces(), mgr);
+        AclLineMatchExpr specializedExpr = specializer.visit(increasedAclExpr);
+        BDD bdd2 = specializedExpr.accept(deltaBDDAcl.getAclLineMatchExprToBDD());
+        */
+
+        //        AclLineMatchExpr increasedExplanation = explainAclExpr(deltaBDDAcl,
+        // increasedAclExpr);
+        AclLineMatchExpr increasedExplanation = explainAclExpr(deltaBDDAcl, specializedExpr);
+        System.out.println("");
+      } catch (Throwable t) {
+        System.out.println("");
+      }
+    }
+
+    if (!increasedBDD.isZero()) {
+      BDDIpAccessListSpecializer specializer =
+          new BDDIpAccessListSpecializer(
+              bddPacket, increasedBDD, deltaConfig.getIpSpaces(), mgr, false);
+      Map<String, IpAccessList> specializedAcls =
+          toImmutableMap(
+              deltaConfig.getIpAccessLists(),
+              Entry::getKey,
+              entry -> specializer.specialize(entry.getValue()));
+
+      IpAccessList increasedAcl = specializer.specialize(deltaAcl);
+      AclLineMatchExpr increasedAclExpr =
+          AclToAclLineMatchExpr.toAclLineMatchExpr(increasedAcl, specializedAcls);
+      AclLineMatchExpr increasedExplanation = explainAclExpr(deltaBDDAcl, increasedAclExpr);
+      System.out.println("\n");
+    }
 
     BDD decreasedBDD = baseAclBDD.and(deltaAclBDD.not());
     Flow decreasedFlow = getFlow(bddPacket, mgr, hostname, decreasedBDD).orElse(null);
 
+    if (!decreasedBDD.isZero()) {
+      IpAccessList decreasedAcl =
+          new BDDIpAccessListSpecializer(bddPacket, decreasedBDD, baseConfig.getIpSpaces(), mgr)
+              .specialize(baseAcl);
+      AclLineMatchExpr decreasedAclExpr =
+          AclToAclLineMatchExpr.toAclLineMatchExpr(decreasedAcl, baseConfig.getIpAccessLists());
+      AclLineMatchExpr decreasedExplanation = explainAclExpr(baseBDDAcl, decreasedAclExpr);
+      System.out.println("\n");
+    }
     return new DifferentialReachFilterResult(increasedFlow, decreasedFlow);
   }
 
@@ -4447,7 +4508,19 @@ public class Batfish extends PluginConsumer implements IBatfish {
     BDD bdd = bddAcl.getBdd().and(headerSpaceBDD).and(mgr.isSane());
 
     AclLineMatchExpr expr = AclToAclLineMatchExpr.toAclLineMatchExpr(acl, node.getIpAccessLists());
-    AclLineMatchExpr nf = normalize(expr);
+    explainAclExpr(bddAcl, expr);
+
+    return getFlow(bddPacket, mgr, node.getHostname(), bdd);
+  }
+
+  private AclLineMatchExpr explainAclExpr(BDDAcl bddAcl, AclLineMatchExpr expr) {
+
+    AclLineMatchExpr nf = null;
+    try {
+      nf = new Normalizer(bddAcl.getAclLineMatchExprToBDD()).normalize(expr);
+    } catch (Throwable e) {
+      System.out.println(e);
+    }
 
     // remove unsatisfiable disjuncts
     SortedSet<AclLineMatchExpr> disjuncts =
@@ -4455,7 +4528,14 @@ public class Batfish extends PluginConsumer implements IBatfish {
     SortedSet<AclLineMatchExpr> satDisjuncts =
         disjuncts
             .stream()
-            .filter(e -> !bddAcl.getAclLineMatchExprToBDD().visit(e).isZero())
+            .filter(
+                e -> {
+                  if (!bddAcl.getAclLineMatchExprToBDD().visit(e).isZero()) {
+                    return true;
+                  } else {
+                    return false;
+                  }
+                })
             .map(
                 e ->
                     e instanceof AndMatchExpr
@@ -4464,9 +4544,10 @@ public class Batfish extends PluginConsumer implements IBatfish {
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
-    AclLineMatchExpr explanation = new OrMatchExpr(satDisjuncts);
-
-    return getFlow(bddPacket, mgr, node.getHostname(), bdd);
+    if (satDisjuncts.isEmpty()) {
+      return FalseExpr.INSTANCE;
+    }
+    return satDisjuncts.size() > 1 ? new OrMatchExpr(satDisjuncts) : satDisjuncts.first();
   }
 
   @Override
