@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.batfish.datamodel.acl.AclLineMatchExpr;
@@ -30,6 +31,8 @@ public class AclExplanation {
   private boolean _satisfiable = true;
 
   private @Nullable HeaderSpace _headerSpace = null;
+
+  private @Nullable SortedSet<HeaderSpace> _notHeaderSpaces = new TreeSet<>();
 
   private @Nonnull Sources _sources = Sources.ANY;
 
@@ -82,6 +85,14 @@ public class AclExplanation {
     return _satisfiable;
   }
 
+    private boolean requireNotHeaderSpace(HeaderSpace headerSpace) {
+      if(!_satisfiable) {
+          return false;
+      }
+      _notHeaderSpaces.add(headerSpace);
+      return true;
+    }
+
   private Optional<AclLineMatchExpr> build() {
     if (!_satisfiable) {
       return Optional.empty();
@@ -92,6 +103,8 @@ public class AclExplanation {
     if (_headerSpace != null) {
       conjunctsBuilder.add(new MatchHeaderSpace(_headerSpace));
     }
+    _notHeaderSpaces.forEach(notHeaderSpace ->
+        conjunctsBuilder.add(new NotMatchExpr(new MatchHeaderSpace(notHeaderSpace))));
     switch (_sources) {
       case DEVICE:
         conjunctsBuilder.add(OriginatingFromDevice.INSTANCE);
@@ -145,6 +158,11 @@ public class AclExplanation {
 
                   @Override
                   public Void visitNotMatchExpr(NotMatchExpr notMatchExpr) {
+                      if(notMatchExpr.getOperand() instanceof MatchHeaderSpace) {
+                          HeaderSpace headerSpace = ((MatchHeaderSpace)notMatchExpr.getOperand()).getHeaderspace();
+                          explanation.requireNotHeaderSpace(headerSpace);
+                          return null;
+                      }
                     throw new IllegalArgumentException(
                         "Can only explain normalized AclLineMatchExprs.");
                   }
