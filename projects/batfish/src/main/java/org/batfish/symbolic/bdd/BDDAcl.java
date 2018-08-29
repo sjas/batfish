@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import net.sf.javabdd.BDD;
 import net.sf.javabdd.BDDFactory;
@@ -41,7 +40,7 @@ public final class BDDAcl {
 
   private BDDAcl(
       BDDPacket pkt,
-      @Nullable IpAccessList acl,
+      IpAccessList acl,
       Map<String, Supplier<BDD>> aclEnv,
       Map<String, IpSpace> ipSpaceEnv,
       BDDSourceManager bddSrcManager) {
@@ -52,7 +51,7 @@ public final class BDDAcl {
     _ipSpaceEnv = ImmutableMap.copyOf(ipSpaceEnv);
     _aclLineMatchExprToBDD =
         new AclLineMatchExprToBDD(_factory, _pkt, _aclEnv, _ipSpaceEnv, _bddSrcManager);
-    _bdd = computeACL(_aclLineMatchExprToBDD, acl);
+    _bdd = computeACL(_factory, _aclLineMatchExprToBDD, acl);
   }
 
   private BDDAcl(BDDAcl other) {
@@ -134,14 +133,7 @@ public final class BDDAcl {
    */
   @Nonnull
   private static BDD computeACL(
-      AclLineMatchExprToBDD aclLineMatchExprToBDD, @Nullable IpAccessList acl) {
-    BDDFactory bddFactory = aclLineMatchExprToBDD.getBDDPacket().getFactory();
-
-    // Check if there is an ACL first
-    if (acl == null) {
-      return bddFactory.one();
-    }
-
+      BDDFactory bddFactory, AclLineMatchExprToBDD aclLineMatchExprToBDD, IpAccessList acl) {
     BDD result = bddFactory.zero();
     for (IpAccessListLine line : Lists.reverse(acl.getLines())) {
       BDD lineBDD = aclLineMatchExprToBDD.visit(line.getMatchCondition());

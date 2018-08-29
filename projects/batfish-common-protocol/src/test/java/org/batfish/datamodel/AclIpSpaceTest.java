@@ -1,5 +1,7 @@
 package org.batfish.datamodel;
 
+import static org.batfish.datamodel.AclIpSpace.intersection;
+import static org.batfish.datamodel.AclIpSpace.union;
 import static org.batfish.datamodel.matchers.IpSpaceMatchers.containsIp;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,24 +37,19 @@ public class AclIpSpaceTest {
 
   @Test
   public void testIntersection() {
-    PrefixIpSpace prefixIpSpace = Prefix.parse("1.2.3.0/24").toIpSpace();
-    assertThat(AclIpSpace.intersection(UniverseIpSpace.INSTANCE, null), nullValue());
+    IpIpSpace ipSpace = new Ip("1.2.3.4").toIpSpace();
+    assertThat(intersection(null, null), nullValue());
     assertThat(
-        AclIpSpace.intersection(null, EmptyIpSpace.INSTANCE, prefixIpSpace),
-        equalTo(EmptyIpSpace.INSTANCE));
-    assertThat(
-        AclIpSpace.intersection(null, prefixIpSpace, UniverseIpSpace.INSTANCE),
-        equalTo(prefixIpSpace));
+        intersection(null, UniverseIpSpace.INSTANCE, null), equalTo(UniverseIpSpace.INSTANCE));
+    assertThat(intersection(ipSpace, null, UniverseIpSpace.INSTANCE), equalTo(ipSpace));
+    assertThat(intersection(EmptyIpSpace.INSTANCE, ipSpace), equalTo(EmptyIpSpace.INSTANCE));
   }
 
   @Test
   public void testUnion() {
-    PrefixIpSpace prefixIpSpace = Prefix.parse("1.2.3.0/24").toIpSpace();
-    assertThat(AclIpSpace.union(null, EmptyIpSpace.INSTANCE), nullValue());
-    assertThat(
-        AclIpSpace.union(null, EmptyIpSpace.INSTANCE, UniverseIpSpace.INSTANCE),
-        equalTo(UniverseIpSpace.INSTANCE));
-    assertThat(
-        AclIpSpace.union(null, EmptyIpSpace.INSTANCE, prefixIpSpace), equalTo(prefixIpSpace));
+    IpIpSpace ipSpace = new Ip("1.2.3.4").toIpSpace();
+    assertThat(union(null, null), nullValue());
+    assertThat(union(EmptyIpSpace.INSTANCE), equalTo(EmptyIpSpace.INSTANCE));
+    assertThat(union(EmptyIpSpace.INSTANCE, ipSpace), equalTo(ipSpace));
   }
 }
