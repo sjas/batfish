@@ -22,7 +22,8 @@ import org.batfish.datamodel.acl.OrMatchExpr;
 import org.batfish.datamodel.acl.OriginatingFromDevice;
 import org.batfish.datamodel.acl.PermittedByAcl;
 import org.batfish.datamodel.acl.TrueExpr;
-import org.batfish.datamodel.acl.explanation.Conjuncts;
+import org.batfish.datamodel.acl.explanation.ConjunctsBuilder;
+import org.batfish.datamodel.acl.explanation.DisjunctsBuilder;
 import org.batfish.symbolic.bdd.AclLineMatchExprToBDD;
 
 /**
@@ -100,8 +101,8 @@ public final class Normalizer implements GenericAclLineMatchExprVisitor<AclLineM
 
     // Normalize subexpressions, combine all OR subexpressions, and then distribute the AND over
     // the single OR.
-    Set<Conjuncts> orOfAnds = new HashSet<>();
-    orOfAnds.add(new Conjuncts(_aclLineMatchExprToBDD));
+    Set<ConjunctsBuilder> orOfAnds = new HashSet<>();
+    orOfAnds.add(new ConjunctsBuilder(_aclLineMatchExprToBDD));
 
     for (AclLineMatchExpr conjunct : normalizedConjuncts) {
       if (conjunct instanceof OrMatchExpr) {
@@ -110,19 +111,19 @@ public final class Normalizer implements GenericAclLineMatchExprVisitor<AclLineM
          * by normalization happens.
          */
         OrMatchExpr orMatchExpr = (OrMatchExpr) conjunct;
-        Set<Conjuncts> newOrOfAnds = new HashSet<>();
+        Set<ConjunctsBuilder> newOrOfAnds = new HashSet<>();
         for (AclLineMatchExpr disjunct : orMatchExpr.getDisjuncts()) {
-          for (Conjuncts conjuncts : orOfAnds) {
-            Conjuncts newConjuncts = new Conjuncts(conjuncts);
+          for (ConjunctsBuilder conjuncts : orOfAnds) {
+            ConjunctsBuilder newConjuncts = new ConjunctsBuilder(conjuncts);
             if (disjunct instanceof AndMatchExpr) {
-              ((AndMatchExpr) disjunct).getConjuncts().forEach(newConjuncts::addConjunct);
+              ((AndMatchExpr) disjunct).getConjuncts().forEach(newConjuncts::add);
             } else {
-              newConjuncts.addConjunct(disjunct);
+              newConjuncts.add(disjunct);
             }
-            if (newConjuncts.isSatisfiable()) {
+            if (!newConjuncts.unsat()) {
               newOrOfAnds.add(newConjuncts);
             } else {
-              System.out.println("hey");
+              System.out.println("unsat conjuncts");
             }
           }
         }
@@ -130,16 +131,13 @@ public final class Normalizer implements GenericAclLineMatchExprVisitor<AclLineM
       } else {
         // add it to each AND
         assert !(conjunct instanceof AndMatchExpr);
-        orOfAnds.forEach(conjuncts -> conjuncts.addConjunct(conjunct));
+        orOfAnds.forEach(conjuncts -> conjuncts.add(conjunct));
       }
     }
 
-    return or(
-        orOfAnds
-            .stream()
-            .map(Conjuncts::getConjuncts)
-            .map(Normalizer::and)
-            .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder())));
+    DisjunctsBuilder disjunctsBuilder = new DisjunctsBuilder(_aclLineMatchExprToBDD);
+    orOfAnds.stream().map(ConjunctsBuilder::build).forEach(disjunctsBuilder::add);
+    return disjunctsBuilder.build();
   }
 
   @Override
@@ -174,20 +172,21 @@ public final class Normalizer implements GenericAclLineMatchExprVisitor<AclLineM
 
   @Override
   public AclLineMatchExpr visitOrMatchExpr(OrMatchExpr orMatchExpr) {
-    return or(
-        orMatchExpr
-            .getDisjuncts()
-            .stream()
-            // normalize
-            .map(this::visit)
-            // expand nested OrMatchExprs
-            .flatMap(
-                expr ->
-                    (expr instanceof OrMatchExpr)
-                        ? ((OrMatchExpr) expr).getDisjuncts().stream()
-                        : Stream.of(expr))
-            .filter(expr -> expr != FalseExpr.INSTANCE)
-            .collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder())));
+    DisjunctsBuilder disjunctsBuilder = new DisjunctsBuilder(_aclLineMatchExprToBDD);
+    orMatchExpr
+        .getDisjuncts()
+        .stream()
+        // normalize
+        .map(this::visit)
+        // expand nested OrMatchExprs
+        .flatMap(
+            expr ->
+                (expr instanceof OrMatchExpr)
+                    ? ((OrMatchExpr) expr).getDisjuncts().stream()
+                    : Stream.of(expr))
+        .filter(expr -> expr != FalseExpr.INSTANCE)
+        .forEach(disjunctsBuilder::add);
+    return disjunctsBuilder.build();
   }
 
   @Override

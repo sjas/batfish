@@ -5,29 +5,48 @@ import static org.batfish.datamodel.acl.AclLineMatchExprs.ORIGINATING_FROM_DEVIC
 import static org.batfish.datamodel.acl.AclLineMatchExprs.TRUE;
 import static org.batfish.datamodel.acl.AclLineMatchExprs.and;
 import static org.batfish.datamodel.acl.AclLineMatchExprs.match;
+import static org.batfish.datamodel.acl.AclLineMatchExprs.matchDst;
 import static org.batfish.datamodel.acl.AclLineMatchExprs.not;
 import static org.batfish.datamodel.acl.AclLineMatchExprs.or;
-import static org.batfish.datamodel.acl.AclLineMatchExprs.permittedByAcl;
 
+import com.google.common.collect.ImmutableMap;
 import org.batfish.datamodel.HeaderSpace;
+import org.batfish.datamodel.Ip;
+import org.batfish.datamodel.IpWildcard;
 import org.batfish.datamodel.acl.AclLineMatchExpr;
 import org.batfish.datamodel.acl.AclLineMatchExprs;
 import org.batfish.datamodel.acl.MatchSrcInterface;
+import org.batfish.symbolic.bdd.AclLineMatchExprToBDD;
+import org.batfish.symbolic.bdd.BDDPacket;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 public class NormalizerTest {
-  private static final AclLineMatchExpr A = permittedByAcl("a");
-  private static final AclLineMatchExpr B = permittedByAcl("b");
-  private static final AclLineMatchExpr C = permittedByAcl("c");
-  private static final AclLineMatchExpr D = permittedByAcl("d");
-  private static final AclLineMatchExpr E = permittedByAcl("e");
+  private static final AclLineMatchExpr A =
+      matchDst(new IpWildcard(new Ip(0x00000000L), new Ip(0xFFFFFFF0L)));
+  private static final AclLineMatchExpr B =
+      matchDst(new IpWildcard(new Ip(0x00000000L), new Ip(0xFFFFFF0FL)));
+  private static final AclLineMatchExpr C =
+      matchDst(new IpWildcard(new Ip(0x00000000L), new Ip(0xFFFFF0FFL)));
+  private static final AclLineMatchExpr D =
+      matchDst(new IpWildcard(new Ip(0x00000000L), new Ip(0xFFFF0FFFL)));
+  private static final AclLineMatchExpr E =
+      matchDst(new IpWildcard(new Ip(0x00000000L), new Ip(0xFFF0FFFFL)));
 
-  private Normalizer normalizer = null;
+  private Normalizer _normalizer;
+
+  @Before
+  public void setup() {
+    BDDPacket pkt = new BDDPacket();
+    AclLineMatchExprToBDD toBDD =
+        new AclLineMatchExprToBDD(pkt.getFactory(), pkt, ImmutableMap.of(), ImmutableMap.of());
+    _normalizer = new Normalizer(toBDD);
+  }
 
   private AclLineMatchExpr normalize(AclLineMatchExpr expr) {
-    return normalizer.normalize(expr);
+    return _normalizer.normalize(expr);
   }
 
   @Test
@@ -69,12 +88,8 @@ public class NormalizerTest {
 
   @Test
   public void visitAndMatchExpr_recursionExpansion() {
-    AclLineMatchExpr a = permittedByAcl("a");
-    AclLineMatchExpr b = permittedByAcl("b");
-    AclLineMatchExpr c = permittedByAcl("c");
-    AclLineMatchExpr d = permittedByAcl("d");
-    AclLineMatchExpr expr = and(a, or(and(b, c), d));
-    AclLineMatchExpr nf = or(and(a, b, c), and(a, d));
+    AclLineMatchExpr expr = and(A, or(and(B, C), D));
+    AclLineMatchExpr nf = or(and(A, B, C), and(A, D));
     Assert.assertThat(normalize(expr), Matchers.equalTo(nf));
   }
 
@@ -97,10 +112,9 @@ public class NormalizerTest {
 
   @Test
   public void visitNotMatchExpr() {
-    AclLineMatchExpr a = permittedByAcl("a");
     Assert.assertThat(normalize(not(FALSE)), Matchers.equalTo(TRUE));
-    Assert.assertThat(normalize(not(a)), Matchers.equalTo(not(a)));
-    Assert.assertThat(normalize(not(not(a))), Matchers.equalTo(a));
+    Assert.assertThat(normalize(not(A)), Matchers.equalTo(not(A)));
+    Assert.assertThat(normalize(not(not(A))), Matchers.equalTo(A));
   }
 
   @Test
@@ -134,29 +148,15 @@ public class NormalizerTest {
 
   @Test
   public void visitOrMatchExpr_dontDistributeOverAnd() {
-    AclLineMatchExpr a = permittedByAcl("a");
-    AclLineMatchExpr b = permittedByAcl("b");
-    AclLineMatchExpr c = permittedByAcl("c");
-    AclLineMatchExpr d = permittedByAcl("d");
-    AclLineMatchExpr expr = or(a, b, and(c, d));
+    AclLineMatchExpr expr = or(A, B, and(C, D));
     Assert.assertThat(normalize(expr), Matchers.equalTo(expr));
   }
 
   @Test
   public void visitOrMatchExpr_recursionExpansion() {
-    AclLineMatchExpr a = permittedByAcl("a");
-    AclLineMatchExpr b = permittedByAcl("b");
-    AclLineMatchExpr c = permittedByAcl("c");
-    AclLineMatchExpr d = permittedByAcl("d");
-    AclLineMatchExpr expr = or(a, and(or(b, c), d));
-    AclLineMatchExpr nf = or(a, and(b, d), and(c, d));
+    AclLineMatchExpr expr = or(A, and(or(B, C), D));
+    AclLineMatchExpr nf = or(A, and(B, D), and(C, D));
     Assert.assertThat(normalize(expr), Matchers.equalTo(nf));
-  }
-
-  @Test
-  public void visitPermittedByAcl() {
-    AclLineMatchExpr expr = permittedByAcl("a");
-    Assert.assertThat(normalize(expr), Matchers.equalTo(expr));
   }
 
   @Test

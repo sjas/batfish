@@ -223,6 +223,7 @@ import org.batfish.z3.BlacklistDstIpQuerySynthesizer;
 import org.batfish.z3.CompositeNodJob;
 import org.batfish.z3.EarliestMoreGeneralReachableLineQuerySynthesizer;
 import org.batfish.z3.IngressLocation;
+import org.batfish.z3.IpAccessListSpecializer;
 import org.batfish.z3.LocationToIngressLocation;
 import org.batfish.z3.MultipathInconsistencyQuerySynthesizer;
 import org.batfish.z3.NodFirstUnsatJob;
@@ -4508,7 +4509,10 @@ public class Batfish extends PluginConsumer implements IBatfish {
     BDD bdd = bddAcl.getBdd().and(headerSpaceBDD).and(mgr.isSane());
 
     AclLineMatchExpr expr = AclToAclLineMatchExpr.toAclLineMatchExpr(acl, node.getIpAccessLists());
-    explainAclExpr(bddAcl, expr);
+    IpAccessListSpecializer specializer =
+        new BDDIpAccessListSpecializer(bddPacket, headerSpaceBDD, node.getIpSpaces(), mgr, false);
+    AclLineMatchExpr specializedExpr = specializer.visit(expr);
+    AclLineMatchExpr explanation = explainAclExpr(bddAcl, specializedExpr);
 
     return getFlow(bddPacket, mgr, node.getHostname(), bdd);
   }
